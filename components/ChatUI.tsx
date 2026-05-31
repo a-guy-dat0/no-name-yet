@@ -39,20 +39,44 @@ export default function ChatUI({ initialUsage }: { initialUsage: Usage }) {
     setMessages(next);
     setInput("");
     setBusy(true);
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: next }),
       });
-      const json = await res.json();
+
+      // Non-200 responses are JSON errors (quota, auth, Ollama down).
       if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
         setError(json.message || json.error || `Error ${res.status}`);
         if (json.usage) setUsage(json.usage);
-      } else {
-        setMessages([...next, { role: "assistant", content: json.answer }]);
-        if (json.usage) setUsage(json.usage);
+        return;
       }
+
+      // Stream: add an empty assistant bubble and fill it token by token.
+      setMessages([...next, { role: "assistant" as const, content: "" }]);
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        full += decoder.decode(value, { stream: true });
+        // Replace the last message in place so React re-renders each token.
+        setMessages((prev) => [
+          ...prev.slice(0, -1),
+          { role: "assistant" as const, content: full },
+        ]);
+      }
+
+      // Refresh quota display after the stream ends.
+      fetch("/api/usage")
+        .then((r) => r.json())
+        .then((u) => setUsage(u))
+        .catch(() => {});
     } catch (err: any) {
       setError(String(err?.message ?? err));
     } finally {
@@ -117,7 +141,8 @@ export default function ChatUI({ initialUsage }: { initialUsage: Usage }) {
           </div>
         ))}
 
-        {busy && (
+        {/* Show typing indicator only while waiting for the first token */}
+        {busy && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex justify-start">
             <div className="glass flex items-center gap-2 rounded-2xl px-4 py-3 text-sm text-gray-400">
               <span className="flex gap-1">
