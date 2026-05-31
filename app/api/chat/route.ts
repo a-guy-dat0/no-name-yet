@@ -108,9 +108,10 @@ export async function POST(req: NextRequest) {
       ]);
 
       // Send the sentinel + metadata as the final chunk.
+      // Use a text sentinel (not null-byte) so Nginx doesn't strip it.
       const newUsage = await getUsage(userId);
       const meta = JSON.stringify({ usage: newUsage, conversationId: convId });
-      controller.enqueue(encoder.encode(`\x00${meta}`));
+      controller.enqueue(encoder.encode(`\n<<<DONE>>>${meta}`));
       controller.close();
     },
     cancel() {

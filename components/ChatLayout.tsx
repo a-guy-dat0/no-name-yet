@@ -134,33 +134,34 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
       setMessages([...next, { role: "assistant", content: "" }]);
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
-      let buffer = "";
+      const SENTINEL = "\n<<<DONE>>>";
+      let displayText = ""; // text shown to user
+      let rawBuffer = "";   // full raw stream including sentinel
+      let metaParsed = false;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+        rawBuffer += decoder.decode(value, { stream: true });
 
-        // The sentinel \x00 marks where text ends and metadata begins.
-        const sentinel = buffer.indexOf("\x00");
-        if (sentinel !== -1) {
-          const text = buffer.slice(0, sentinel);
-          const metaStr = buffer.slice(sentinel + 1);
-          if (text) {
-            setMessages((prev) => [
-              ...prev.slice(0, -1),
-              { role: "assistant", content: prev[prev.length - 1].content + text }
-            ]);
-          }
+        const sentinelIdx = rawBuffer.indexOf(SENTINEL);
+        if (sentinelIdx !== -1) {
+          // Grab any text before the sentinel not yet displayed.
+          displayText = rawBuffer.slice(0, sentinelIdx);
+          setMessages((prev) => [
+            ...prev.slice(0, -1),
+            { role: "assistant", content: displayText }
+          ]);
+          // Parse usage + conversationId from the tail.
           try {
-            const meta = JSON.parse(metaStr);
-            if (meta.usage) setUsage(meta.usage);
-            // Update conversation title in sidebar.
+            const meta = JSON.parse(rawBuffer.slice(sentinelIdx + SENTINEL.length));
+            if (meta.usage) { setUsage(meta.usage); metaParsed = true; }
             if (meta.conversationId) {
+              const firstUserContent = next.find(m => m.role === "user")?.content ?? "";
               setConversations((prev) =>
                 prev.map((c) =>
                   c.id === meta.conversationId
-                    ? { ...c, title: next[0]?.content.slice(0, 60) || c.title, updatedAt: new Date().toISOString() }
+                    ? { ...c, title: firstUserContent.slice(0, 60) || c.title, updatedAt: new Date().toISOString() }
                     : c
                 )
               );
@@ -169,15 +170,19 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
           break;
         }
 
-        // No sentinel yet — stream text as it arrives.
+        // No sentinel yet — show only the new part appended this chunk.
+        displayText = rawBuffer;
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (!last || last.role !== "assistant") return prev;
-          return [
-            ...prev.slice(0, -1),
-            { ...last, content: buffer }
-          ];
+          return [...prev.slice(0, -1), { ...last, content: displayText }];
         });
+      }
+
+      // Fallback: if sentinel never arrived (proxy issue, timeout, etc.)
+      // fetch usage the old-fashioned way so the quota bar stays correct.
+      if (!metaParsed) {
+        fetch("/api/usage").then(r => r.json()).then(u => setUsage(u)).catch(() => {});
       }
     } catch (err: any) {
       setError(String(err?.message ?? err));
