@@ -287,8 +287,8 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
           </span>
         </div>
 
-        {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+        {/* Messages — min-h-0 prevents the flex child from growing past its container */}
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-5 space-y-4">
           {messages.length === 0 && (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
               <div className="icon-btn h-12 w-12 rounded-2xl border-white/[0.1] bg-indigo-500/10 text-indigo-300">
@@ -355,8 +355,8 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
               }}
-              disabled={busy || outOfQuota}
-              placeholder={outOfQuota ? "Out of questions for this period." : "Type a message… (Enter to send, Shift+Enter for newline)"}
+              disabled={outOfQuota}
+              placeholder={busy ? "Waiting for reply…" : outOfQuota ? "Out of questions for this period." : "Type a message… (Enter to send, Shift+Enter for newline)"}
               className="flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-white placeholder-gray-600 outline-none"
               style={{ minHeight: "36px", maxHeight: "160px" }}
             />
