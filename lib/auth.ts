@@ -1,5 +1,6 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import type { NextAuthOptions, SendVerificationRequestParams } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
+import type { SendVerificationRequestParams } from "next-auth/providers/email";
 import GoogleProvider from "next-auth/providers/google";
 import EmailProvider from "next-auth/providers/email";
 import { prisma } from "./db";
