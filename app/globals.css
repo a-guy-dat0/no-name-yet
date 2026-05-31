@@ -17,8 +17,15 @@
   --text-dim:     #9ca3af;
 }
 
-html, body {
+/* Background colour sits on html so body can be transparent.
+   Orbs at z-index 0 would otherwise be hidden behind a solid body bg. */
+html {
   background-color: var(--bg);
+  min-height: 100%;
+}
+
+body {
+  background-color: transparent;
   min-height: 100%;
   color: #e2e4ea;
 }

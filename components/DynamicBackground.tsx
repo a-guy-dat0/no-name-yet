@@ -9,7 +9,8 @@ export default function DynamicBackground() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      className="pointer-events-none fixed inset-0 overflow-hidden"
+      style={{ zIndex: 0 }}
     >
       {/* Purple — large, top-left, slow drift */}
       <div className="orb orb-1" />

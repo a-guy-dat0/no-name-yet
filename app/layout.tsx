@@ -15,11 +15,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <DynamicBackground />
-        <SessionProviderWrapper>
-          <Nav />
-          {/* Chat page manages its own full-height layout; other pages get the centered wrapper */}
-          <main>{children}</main>
-        </SessionProviderWrapper>
+        {/* relative + z-index so all content sits above the z-0 orbs */}
+        <div className="relative" style={{ zIndex: 1 }}>
+          <SessionProviderWrapper>
+            <Nav />
+            <main>{children}</main>
+          </SessionProviderWrapper>
+        </div>
       </body>
     </html>
   );
