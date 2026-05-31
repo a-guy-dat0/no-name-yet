@@ -1,32 +1,50 @@
 "use client";
 
-// Sign-in now routes to /signin (supports Google + email magic link).
+// Frosted-glass nav bar — sign-in routes to /signin (Google + email magic link).
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 
 export default function Nav() {
   const { data: session, status } = useSession();
+
   return (
-    <header className="border-b border-[var(--border)] bg-[var(--panel)]">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="text-lg font-semibold text-white">
-          {"{no name yet}"}
+    <header className="sticky top-0 z-50 w-full border-b border-white/[0.07] backdrop-blur-2xl"
+            style={{ background: "rgba(7,8,14,0.75)" }}>
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
+
+        {/* Brand */}
+        <Link href="/" className="flex items-center gap-2.5 group">
+          {/* Rounded-square logo icon */}
+          <span className="icon-btn text-indigo-400 group-hover:text-indigo-300">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+              <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 3a1 1 0 110 2 1 1 0 010-2zm-1 4h2v5H9V9z"/>
+            </svg>
+          </span>
+          <span className="text-sm font-semibold tracking-tight text-white">
+            {"{no name yet}"}
+          </span>
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
-          <Link href="/pricing" className="text-gray-300 hover:text-white">
+
+        {/* Nav links */}
+        <nav className="flex items-center gap-1 text-sm">
+          <Link href="/pricing"
+                className="rounded-lg px-3 py-1.5 text-gray-400 transition-colors hover:bg-white/[0.05] hover:text-white">
             Pricing
           </Link>
-          <Link href="/chat" className="text-gray-300 hover:text-white">
+          <Link href="/chat"
+                className="rounded-lg px-3 py-1.5 text-gray-400 transition-colors hover:bg-white/[0.05] hover:text-white">
             Chat
           </Link>
+
           {status === "authenticated" ? (
             <>
-              <Link href="/account" className="text-gray-300 hover:text-white">
+              <Link href="/account"
+                    className="rounded-lg px-3 py-1.5 text-gray-400 transition-colors hover:bg-white/[0.05] hover:text-white">
                 Account
               </Link>
               <button
                 onClick={() => signOut()}
-                className="rounded-md border border-[var(--border)] px-3 py-1 text-gray-200 hover:bg-[var(--border)]"
+                className="ml-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-gray-300 backdrop-blur-sm transition-all hover:bg-white/[0.08] hover:text-white"
               >
                 Sign out
               </button>
@@ -34,7 +52,7 @@ export default function Nav() {
           ) : (
             <Link
               href="/signin"
-              className="rounded-md bg-brand-600 px-3 py-1 font-medium text-white hover:bg-brand-700"
+              className="ml-1 rounded-lg px-4 py-1.5 font-medium text-white btn-brand"
             >
               Sign in
             </Link>

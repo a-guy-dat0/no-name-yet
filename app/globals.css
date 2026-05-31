@@ -2,26 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Base ─────────────────────────────────────────────── */
 :root {
-  --bg: #0b0d12;
-  --panel: #11141b;
-  --border: #1f2330;
+  --bg:          #07080e;
+  --glow-purple: rgba(109, 40, 217, 0.18);
+  --glow-indigo: rgba(79, 70, 229, 0.12);
+  --glass-bg:    rgba(255, 255, 255, 0.042);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover:  rgba(255, 255, 255, 0.07);
+  --text-muted:  #6b7280;
+  --text-dim:    #9ca3af;
 }
 
 html, body {
-  background: var(--bg);
-  color: #e5e7eb;
+  background-color: var(--bg);
+  /* Ambient purple/indigo glow — gives the glass panels something to blur */
+  background-image:
+    radial-gradient(ellipse 70% 55% at 15% 10%, var(--glow-purple) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 45% at 85% 85%, var(--glow-indigo) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 35% at 55% 50%, rgba(99, 40, 180, 0.07) 0%, transparent 60%);
+  background-attachment: fixed;
   min-height: 100%;
+  color: #e2e4ea;
 }
 
 * { box-sizing: border-box; }
 
-.prose-chat p { margin: 0.5rem 0; }
-.prose-chat pre {
-  background: #0a0c11;
-  border: 1px solid var(--border);
-  padding: 0.75rem;
-  border-radius: 8px;
-  overflow-x: auto;
+/* ── Glass utility ────────────────────────────────────── */
+@layer components {
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+  }
+
+  .glass-hover {
+    transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  }
+  .glass-hover:hover {
+    background: var(--glass-hover);
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  /* Icon button — rounded square with glass */
+  .icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.625rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: background 150ms ease, border-color 150ms ease;
+  }
+  .icon-btn:hover {
+    background: var(--glass-hover);
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  /* Brand glow button */
+  .btn-brand {
+    background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 100%);
+    box-shadow: 0 0 0 1px rgba(109,40,217,0.4), 0 4px 20px rgba(79,70,229,0.35);
+    transition: box-shadow 180ms ease, opacity 180ms ease;
+  }
+  .btn-brand:hover {
+    box-shadow: 0 0 0 1px rgba(109,40,217,0.6), 0 6px 28px rgba(79,70,229,0.5);
+    opacity: 0.95;
+  }
+
+  /* Subtle divider */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--glass-border);
+  }
 }
-.prose-chat code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* ── Prose inside chat bubbles ───────────────────────── */
+.prose-chat p  { margin: 0.4rem 0; }
+.prose-chat p:first-child { margin-top: 0; }
+.prose-chat p:last-child  { margin-bottom: 0; }
+.prose-chat pre {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--glass-border);
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+.prose-chat code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+}
+.prose-chat ul, .prose-chat ol { padding-left: 1.25rem; margin: 0.4rem 0; }
