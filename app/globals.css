@@ -4,12 +4,12 @@
 
 /* ── Base ─────────────────────────────────────────────── */
 :root {
-  --bg:           #07080e;
-  --glow-purple:  rgba(109, 40, 217, 0.18);
-  --glow-indigo:  rgba(79,  70, 229, 0.13);
-  --glow-blue:    rgba(37,  99, 235, 0.13);
-  --glow-cyan:    rgba(8,  145, 178, 0.10);
-  --glow-green:   rgba(5,  150, 105, 0.11);
+  --bg:           #06070c;
+  --glow-purple:  rgba(120, 40, 230, 0.35);
+  --glow-indigo:  rgba(79,  70, 229, 0.28);
+  --glow-blue:    rgba(37,  99, 235, 0.28);
+  --glow-cyan:    rgba(8,  145, 178, 0.22);
+  --glow-green:   rgba(5,  150, 105, 0.24);
   --glass-bg:     rgba(255, 255, 255, 0.042);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-hover:  rgba(255, 255, 255, 0.07);
@@ -19,13 +19,13 @@
 
 html, body {
   background-color: var(--bg);
-  /* Five ambient glow spots — purple, blue, green scattered around the viewport */
+  /* Vibrant ambient glow orbs — purple, blue, green, cyan */
   background-image:
-    radial-gradient(ellipse 65% 50% at 12%  8%,  var(--glow-purple) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 40% at 88% 80%,  var(--glow-indigo) 0%, transparent 65%),
-    radial-gradient(ellipse 45% 38% at 82% 12%,  var(--glow-blue)   0%, transparent 60%),
-    radial-gradient(ellipse 40% 35% at 18% 85%,  var(--glow-green)  0%, transparent 60%),
-    radial-gradient(ellipse 35% 30% at 50% 45%,  var(--glow-cyan)   0%, transparent 55%);
+    radial-gradient(ellipse 75% 60% at 10%  5%,  var(--glow-purple) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 50% at 90% 85%,  var(--glow-indigo) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 45% at 88% 10%,  var(--glow-blue)   0%, transparent 60%),
+    radial-gradient(ellipse 50% 42% at 12% 90%,  var(--glow-green)  0%, transparent 60%),
+    radial-gradient(ellipse 45% 38% at 50% 48%,  var(--glow-cyan)   0%, transparent 55%);
   background-attachment: fixed;
   min-height: 100%;
   color: #e2e4ea;
@@ -95,25 +95,41 @@ html, body {
     opacity: 0.95;
   }
 
-  /* ── User chat bubble — animated purple→blue→green rainbow ── */
+  /* ── User chat bubble — solid animated rainbow ── */
   .user-bubble {
-    /* gradient is 4× wider than the element so the motion looks smooth */
     background: linear-gradient(
       90deg,
-      #5b21b6,   /* deep purple   */
-      #4f46e5,   /* indigo        */
-      #2563eb,   /* blue          */
-      #0891b2,   /* cyan          */
-      #059669,   /* green         */
-      #0891b2,   /* cyan          */
-      #2563eb,   /* blue          */
-      #4f46e5,   /* indigo        */
-      #5b21b6    /* deep purple   */
+      #5b21b6, #4f46e5, #2563eb, #0891b2,
+      #059669, #0891b2, #2563eb, #4f46e5, #5b21b6
     );
     background-size: 400% 100%;
     animation: rainbow-shift 6s linear infinite;
-    /* Soft glow that picks up the bubble's current colour */
-    box-shadow: 0 0 20px rgba(79, 70, 229, 0.35);
+    box-shadow: 0 0 24px rgba(79, 70, 229, 0.4);
+  }
+
+  /* ── AI bubble — glass + very subtle rainbow tint ── */
+  .ai-bubble {
+    /* Same gradient but at ~8% opacity so the glass stays see-through */
+    background: linear-gradient(
+      90deg,
+      rgba(91,  33, 182, 0.10),
+      rgba(79,  70, 229, 0.08),
+      rgba(37,  99, 235, 0.10),
+      rgba(8,  145, 178, 0.08),
+      rgba(5,  150, 105, 0.10),
+      rgba(8,  145, 178, 0.08),
+      rgba(37,  99, 235, 0.10),
+      rgba(79,  70, 229, 0.08),
+      rgba(91,  33, 182, 0.10)
+    );
+    background-size: 400% 100%;
+    animation: rainbow-shift 6s linear infinite;
+    /* Glass blur on top of the tint */
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    /* Subtle matching glow */
+    box-shadow: 0 0 16px rgba(8, 145, 178, 0.15);
   }
 
   .divider {

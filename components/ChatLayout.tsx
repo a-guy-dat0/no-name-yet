@@ -316,7 +316,7 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
               <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
-                m.role === "user" ? "user-bubble text-white" : "glass text-gray-100"
+                m.role === "user" ? "user-bubble text-white" : "ai-bubble text-gray-100"
               }`}>
                 <div className="prose-chat">
                   <ReactMarkdown>{m.content}</ReactMarkdown>
