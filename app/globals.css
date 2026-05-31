@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0b0d12;
+  --panel: #11141b;
+  --border: #1f2330;
+}
+
+html, body {
+  background: var(--bg);
+  color: #e5e7eb;
+  min-height: 100%;
+}
+
+* { box-sizing: border-box; }
+
+.prose-chat p { margin: 0.5rem 0; }
+.prose-chat pre {
+  background: #0a0c11;
+  border: 1px solid var(--border);
+  padding: 0.75rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.prose-chat code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
