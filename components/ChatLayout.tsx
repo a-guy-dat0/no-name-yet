@@ -39,6 +39,9 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Tracks which conversation owns the current stream so stale callbacks
+  // from a previous chat don't bleed into a newly created one.
+  const streamingConvRef = useRef<string | null>(null);
 
   // Load conversation list on mount.
   useEffect(() => {
@@ -65,14 +68,17 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
   }, []);
 
   // Create a new conversation and select it.
+  // Clear messages immediately (before the fetch) so the UI is blank right away.
   async function newChat() {
+    setMessages([]);
+    setActiveId(null);
+    setError(null);
+    setBusy(false);
     const res = await fetch("/api/conversations", { method: "POST" });
     if (!res.ok) return;
     const conv: Conversation = await res.json();
     setConversations((prev) => [conv, ...prev]);
     setActiveId(conv.id);
-    setMessages([]);
-    setError(null);
     textareaRef.current?.focus();
   }
 
@@ -112,6 +118,7 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
       textareaRef.current.style.height = "auto";
     }
     setBusy(true);
+    streamingConvRef.current = convId; // mark this conv as the active stream
 
     try {
       const res = await fetch("/api/chat", {
@@ -131,52 +138,58 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
       }
 
       // Add empty assistant bubble; fill it token by token.
+      // Only update state if this stream still belongs to the active conv.
+      const thisConv = convId;
+      const isStale = () => streamingConvRef.current !== thisConv;
+
       setMessages([...next, { role: "assistant", content: "" }]);
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
       const SENTINEL = "\n<<<DONE>>>";
-      let displayText = ""; // text shown to user
-      let rawBuffer = "";   // full raw stream including sentinel
+      let displayText = "";
+      let rawBuffer = "";
       let metaParsed = false;
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done || isStale()) break;
         rawBuffer += decoder.decode(value, { stream: true });
 
         const sentinelIdx = rawBuffer.indexOf(SENTINEL);
         if (sentinelIdx !== -1) {
-          // Grab any text before the sentinel not yet displayed.
           displayText = rawBuffer.slice(0, sentinelIdx);
-          setMessages((prev) => [
-            ...prev.slice(0, -1),
-            { role: "assistant", content: displayText }
-          ]);
-          // Parse usage + conversationId from the tail.
-          try {
-            const meta = JSON.parse(rawBuffer.slice(sentinelIdx + SENTINEL.length));
-            if (meta.usage) { setUsage(meta.usage); metaParsed = true; }
-            if (meta.conversationId) {
-              const firstUserContent = next.find(m => m.role === "user")?.content ?? "";
-              setConversations((prev) =>
-                prev.map((c) =>
-                  c.id === meta.conversationId
-                    ? { ...c, title: firstUserContent.slice(0, 60) || c.title, updatedAt: new Date().toISOString() }
-                    : c
-                )
-              );
-            }
-          } catch {}
+          if (!isStale()) {
+            setMessages((prev) => [
+              ...prev.slice(0, -1),
+              { role: "assistant", content: displayText }
+            ]);
+            try {
+              const meta = JSON.parse(rawBuffer.slice(sentinelIdx + SENTINEL.length));
+              if (meta.usage) { setUsage(meta.usage); metaParsed = true; }
+              if (meta.conversationId) {
+                const firstUserContent = next.find(m => m.role === "user")?.content ?? "";
+                setConversations((prev) =>
+                  prev.map((c) =>
+                    c.id === meta.conversationId
+                      ? { ...c, title: firstUserContent.slice(0, 60) || c.title, updatedAt: new Date().toISOString() }
+                      : c
+                  )
+                );
+              }
+            } catch {}
+          }
           break;
         }
 
-        // No sentinel yet — show only the new part appended this chunk.
+        // Normal chunk — append new text only.
         displayText = rawBuffer;
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (!last || last.role !== "assistant") return prev;
-          return [...prev.slice(0, -1), { ...last, content: displayText }];
-        });
+        if (!isStale()) {
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (!last || last.role !== "assistant") return prev;
+            return [...prev.slice(0, -1), { ...last, content: displayText }];
+          });
+        }
       }
 
       // Fallback: if sentinel never arrived (proxy issue, timeout, etc.)
