@@ -1,7 +1,8 @@
 "use client";
 
+// Sign-in flows to /signin page instead of directly triggering Google OAuth.
 import Link from "next/link";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { TIERS, TierId } from "@/lib/tiers";
 
 export default function PricingCards() {
@@ -40,12 +41,12 @@ export default function PricingCards() {
             </ul>
             <div className="mt-6">
               {!session ? (
-                <button
-                  onClick={() => signIn("google")}
-                  className="w-full rounded-md bg-brand-600 px-3 py-2 font-medium text-white hover:bg-brand-700"
+                <Link
+                  href="/signin"
+                  className="block rounded-md bg-brand-600 px-3 py-2 text-center font-medium text-white hover:bg-brand-700"
                 >
                   Sign in to {t.priceUsd === 0 ? "start" : "subscribe"}
-                </button>
+                </Link>
               ) : isCurrent ? (
                 <div className="rounded-md border border-brand-600 px-3 py-2 text-center text-sm text-brand-500">
                   Current plan

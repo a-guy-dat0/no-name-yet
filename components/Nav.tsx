@@ -1,7 +1,8 @@
 "use client";
 
+// Sign-in now routes to /signin (supports Google + email magic link).
 import Link from "next/link";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 export default function Nav() {
   const { data: session, status } = useSession();
@@ -31,12 +32,12 @@ export default function Nav() {
               </button>
             </>
           ) : (
-            <button
-              onClick={() => signIn("google")}
+            <Link
+              href="/signin"
               className="rounded-md bg-brand-600 px-3 py-1 font-medium text-white hover:bg-brand-700"
             >
               Sign in
-            </button>
+            </Link>
           )}
         </nav>
       </div>

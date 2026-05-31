@@ -1,8 +1,9 @@
 "use client";
 
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
+// Sign-in routes to /signin page which supports both Google and email magic link.
 import { useRouter } from "next/navigation";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { TierId } from "@/lib/tiers";
 
 const PLAN_IDS: Record<TierId, string | undefined> = {
@@ -21,12 +22,12 @@ export default function PaypalCheckout({ tier }: { tier: TierId }) {
   if (status === "loading") return <p className="text-gray-400">Loading…</p>;
   if (!session) {
     return (
-      <button
-        onClick={() => signIn("google")}
-        className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700"
+      <a
+        href="/signin"
+        className="inline-block rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700"
       >
-        Sign in with Google to subscribe
-      </button>
+        Sign in to subscribe
+      </a>
     );
   }
   if (!clientId || !planId) {
