@@ -362,10 +362,10 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
             />
             <button
               type="submit"
-              disabled={busy || outOfQuota || !input.trim()}
+              disabled={outOfQuota || !input.trim()}
               className="btn-brand shrink-0 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
             >
-              Send
+              {busy ? "…" : "Send"}
             </button>
           </form>
         </div>
