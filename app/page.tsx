@@ -4,7 +4,7 @@ import PricingCards from "@/components/PricingCards";
 
 export default function LandingPage() {
   return (
-    <div className="space-y-24 py-16">
+    <div className="mx-auto max-w-5xl px-4 space-y-24 py-16">
 
       {/* ── Hero ─────────────────────────────────────── */}
       <section className="mx-auto max-w-3xl text-center">

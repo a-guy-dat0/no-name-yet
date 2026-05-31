@@ -47,24 +47,26 @@ model VerificationToken {
 
 // ---------- App tables ----------
 model User {
-  id            String         @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String?        @unique
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
-  createdAt     DateTime       @default(now())
+  createdAt     DateTime  @default(now())
 
   // Subscription / tier state
-  tier                Int       @default(0)          // 0,1,2,3
-  paypalSubscriptionId String?  @unique
-  subscriptionStatus  String?                       // ACTIVE, CANCELLED, SUSPENDED, etc.
+  tier                 Int       @default(0)
+  paypalSubscriptionId String?   @unique
+  subscriptionStatus   String?
   subscriptionRenewsAt DateTime?
 
   accounts      Account[]
   sessions      Session[]
   questions     Question[]
+  conversations Conversation[]
 }
 
+// Quota tracking — one record per question asked (for rolling-window counting)
 model Question {
   id        String   @id @default(cuid())
   userId    String
@@ -74,4 +76,29 @@ model Question {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+// Chat conversations — each user can have many named conversations
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String    @default("New chat")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@index([userId, updatedAt])
+}
+
+// Individual messages within a conversation
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  role           String       // "user" | "assistant"
+  content        String
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }

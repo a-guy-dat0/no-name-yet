@@ -16,7 +16,7 @@ export default function PricingPage({
       : null;
 
   return (
-    <div className="space-y-10 py-6">
+    <div className="mx-auto max-w-5xl px-4 space-y-10 py-6">
       <h1 className="text-3xl font-bold text-white">Plans & pricing</h1>
       <PricingCards />
 

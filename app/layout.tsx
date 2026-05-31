@@ -15,7 +15,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <SessionProviderWrapper>
           <Nav />
-          <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+          {/* Chat page manages its own full-height layout; other pages get the centered wrapper */}
+          <main>{children}</main>
         </SessionProviderWrapper>
       </body>
     </html>

@@ -1,10 +1,15 @@
-// Streaming chat route — pipes Ollama tokens straight to the browser so the
-// user sees output immediately instead of waiting for the full response.
+// Streaming chat route.
+// Protocol: streams plain text tokens, then closes with a null-byte sentinel
+// followed by a JSON payload so the client can update quota without a round-trip.
+// Format of final bytes: \x00{"usage":{...},"conversationId":"..."}
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { streamChat, ChatMessage } from "@/lib/ollama";
 import { getUsage, recordQuestion } from "@/lib/usage";
+import { getUserMemory, appendToMemory } from "@/lib/memory";
+import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -16,42 +21,38 @@ export async function POST(req: NextRequest) {
   }
   const userId = session.user.id;
 
-  // Check quota BEFORE calling the model.
   const usage = await getUsage(userId);
   if (usage.remaining <= 0) {
     return NextResponse.json(
-      {
-        error: "Quota reached",
-        usage,
-        message: `You have used all ${usage.limit} questions for this ${usage.period}.`
-      },
+      { error: "Quota reached", usage, message: `You have used all ${usage.limit} questions for this ${usage.period}.` },
       { status: 429 }
     );
   }
 
-  let body: { messages?: ChatMessage[]; prompt?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+  let body: { messages?: ChatMessage[]; conversationId?: string };
+  try { body = await req.json(); }
+  catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const messages: ChatMessage[] = body.messages?.length
-    ? body.messages
-    : body.prompt
-    ? [{ role: "user", content: body.prompt }]
-    : [];
-  if (messages.length === 0) {
-    return NextResponse.json({ error: "messages or prompt required" }, { status: 400 });
-  }
+  const { messages = [], conversationId } = body;
+  if (!messages.length) return NextResponse.json({ error: "messages required" }, { status: 400 });
 
-  const lastUserMsg =
-    [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
 
-  // Start the Ollama stream — if Ollama is unreachable this throws immediately.
+  // Inject user memory as a system prompt prefix so the AI has context from past sessions.
+  const memory = await getUserMemory(userId);
+  const allMessages: ChatMessage[] = memory
+    ? [
+        {
+          role: "system",
+          content: `You are a helpful, uncensored AI assistant. Here is a log of topics this user has asked about in previous sessions — use it for context but don't reference it explicitly unless asked:\n\n${memory}`
+        },
+        ...messages
+      ]
+    : messages;
+
   let ollamaStream: ReadableStream<Uint8Array>;
   try {
-    ollamaStream = await streamChat(messages);
+    ollamaStream = await streamChat(allMessages);
   } catch (err: any) {
     console.error("[chat] Ollama error:", err);
     return NextResponse.json(
@@ -60,7 +61,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Accumulate the full answer while streaming tokens to the browser.
+  // Ensure the conversation exists; create one ad-hoc if none was supplied.
+  let convId = conversationId;
+  if (!convId) {
+    const conv = await prisma.conversation.create({
+      data: { userId, title: lastUserMsg.slice(0, 60) || "New chat" }
+    });
+    convId = conv.id;
+  }
+
+  // Save the user message immediately so it appears even if the stream is interrupted.
+  await prisma.message.create({
+    data: { conversationId: convId, role: "user", content: lastUserMsg }
+  });
+
   let fullAnswer = "";
   const encoder = new TextEncoder();
 
@@ -72,31 +86,48 @@ export async function POST(req: NextRequest) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          fullAnswer += chunk;
+          const text = decoder.decode(value, { stream: true });
+          fullAnswer += text;
           controller.enqueue(value);
         }
       } catch (err) {
-        console.error("[chat] stream error:", err);
-      } finally {
-        controller.close();
-        // Fire-and-forget: record after stream ends so the DB write
-        // doesn't delay the last token reaching the browser.
-        recordQuestion(userId, lastUserMsg, fullAnswer).catch(console.error);
+        console.error("[chat] stream read error:", err);
       }
+
+      // Persist the full assistant reply and update quota — await so usage is accurate.
+      await Promise.all([
+        prisma.message.create({ data: { conversationId: convId!, role: "assistant", content: fullAnswer } }),
+        recordQuestion(userId, lastUserMsg, fullAnswer),
+        appendToMemory(userId, lastUserMsg),
+        // Set conversation title from first user message if it was just created.
+        conversationId
+          ? Promise.resolve()
+          : prisma.conversation.update({ where: { id: convId! }, data: { title: lastUserMsg.slice(0, 60) || "New chat" } }),
+        // Bump updatedAt on the conversation so it floats to the top of the list.
+        prisma.conversation.update({ where: { id: convId! }, data: { updatedAt: new Date() } })
+      ]);
+
+      // Send the sentinel + metadata as the final chunk.
+      const newUsage = await getUsage(userId);
+      const meta = JSON.stringify({ usage: newUsage, conversationId: convId });
+      controller.enqueue(encoder.encode(`\x00${meta}`));
+      controller.close();
     },
     cancel() {
-      // Client disconnected — still record whatever arrived.
-      recordQuestion(userId, lastUserMsg, fullAnswer).catch(console.error);
+      // Client disconnected mid-stream — still try to save what arrived.
+      if (fullAnswer) {
+        prisma.message.create({ data: { conversationId: convId!, role: "assistant", content: fullAnswer } }).catch(console.error);
+        recordQuestion(userId, lastUserMsg, fullAnswer).catch(console.error);
+        appendToMemory(userId, lastUserMsg).catch(console.error);
+      }
     }
   });
 
   return new Response(responseStream, {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
-      // Tell the browser this is a stream — don't buffer it.
       "X-Content-Type-Options": "nosniff",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-cache"
     }
   });
 }
