@@ -40,6 +40,83 @@ body {
   100% { background-position:   0% 50%; }
 }
 
+/* ── Animated mesh gradient ───────────────────────────── */
+/* Register each node's x/y as an animatable CSS custom property.
+   Without @property the browser can't interpolate percentages in
+   radial-gradient() — it would just snap between values. */
+
+@property --m1x { syntax: '<percentage>'; inherits: false; initial-value: 8%;  }
+@property --m1y { syntax: '<percentage>'; inherits: false; initial-value: 12%; }
+@property --m2x { syntax: '<percentage>'; inherits: false; initial-value: 90%; }
+@property --m2y { syntax: '<percentage>'; inherits: false; initial-value: 8%;  }
+@property --m3x { syntax: '<percentage>'; inherits: false; initial-value: 10%; }
+@property --m3y { syntax: '<percentage>'; inherits: false; initial-value: 90%; }
+@property --m4x { syntax: '<percentage>'; inherits: false; initial-value: 92%; }
+@property --m4y { syntax: '<percentage>'; inherits: false; initial-value: 88%; }
+@property --m5x { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
+@property --m5y { syntax: '<percentage>'; inherits: false; initial-value: 52%; }
+@property --m6x { syntax: '<percentage>'; inherits: false; initial-value: 18%; }
+@property --m6y { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
+@property --m7x { syntax: '<percentage>'; inherits: false; initial-value: 80%; }
+@property --m7y { syntax: '<percentage>'; inherits: false; initial-value: 55%; }
+
+.mesh-bg {
+  background-color: #050508;
+  background-image:
+    radial-gradient(ellipse 55% 50% at var(--m1x) var(--m1y), rgba(109,40,217,0.55)  0%, transparent 100%),
+    radial-gradient(ellipse 50% 45% at var(--m2x) var(--m2y), rgba(37,99,235,0.50)   0%, transparent 100%),
+    radial-gradient(ellipse 50% 45% at var(--m3x) var(--m3y), rgba(5,150,105,0.50)   0%, transparent 100%),
+    radial-gradient(ellipse 48% 42% at var(--m4x) var(--m4y), rgba(79,70,229,0.48)   0%, transparent 100%),
+    radial-gradient(ellipse 35% 32% at var(--m5x) var(--m5y), rgba(8,145,178,0.38)   0%, transparent 100%),
+    radial-gradient(ellipse 30% 28% at var(--m6x) var(--m6y), rgba(139,92,246,0.32)  0%, transparent 100%),
+    radial-gradient(ellipse 28% 26% at var(--m7x) var(--m7y), rgba(6,182,212,0.28)   0%, transparent 100%),
+    radial-gradient(ellipse 38% 22% at 50%  5%,               rgba(59,130,246,0.28)  0%, transparent 100%),
+    radial-gradient(ellipse 38% 22% at 50%  98%,              rgba(16,185,129,0.28)  0%, transparent 100%);
+  animation:
+    mesh1 22s ease-in-out infinite,
+    mesh2 27s ease-in-out infinite,
+    mesh3 19s ease-in-out infinite,
+    mesh4 24s ease-in-out infinite,
+    mesh5 16s ease-in-out infinite,
+    mesh6 21s ease-in-out infinite,
+    mesh7 18s ease-in-out infinite;
+}
+
+@keyframes mesh1 {
+  0%,100% { --m1x:  8%; --m1y: 12%; }
+  33%     { --m1x: 16%; --m1y: 20%; }
+  66%     { --m1x:  4%; --m1y:  6%; }
+}
+@keyframes mesh2 {
+  0%,100% { --m2x: 90%; --m2y:  8%; }
+  40%     { --m2x: 82%; --m2y: 16%; }
+  70%     { --m2x: 95%; --m2y:  4%; }
+}
+@keyframes mesh3 {
+  0%,100% { --m3x: 10%; --m3y: 90%; }
+  35%     { --m3x: 18%; --m3y: 82%; }
+  65%     { --m3x:  4%; --m3y: 96%; }
+}
+@keyframes mesh4 {
+  0%,100% { --m4x: 92%; --m4y: 88%; }
+  45%     { --m4x: 84%; --m4y: 94%; }
+  75%     { --m4x: 98%; --m4y: 80%; }
+}
+@keyframes mesh5 {
+  0%,100% { --m5x: 50%; --m5y: 52%; }
+  25%     { --m5x: 60%; --m5y: 44%; }
+  50%     { --m5x: 42%; --m5y: 62%; }
+  75%     { --m5x: 56%; --m5y: 40%; }
+}
+@keyframes mesh6 {
+  0%,100% { --m6x: 18%; --m6y: 50%; }
+  50%     { --m6x: 26%; --m6y: 42%; }
+}
+@keyframes mesh7 {
+  0%,100% { --m7x: 80%; --m7y: 55%; }
+  50%     { --m7x: 72%; --m7y: 63%; }
+}
+
 /* ── Fluid background blobs ───────────────────────────── */
 /* Solid-colour rounded divs — the SVG #fluid filter in DynamicBackground
    warps them into organic flowing shapes. Minimal blur here since the
