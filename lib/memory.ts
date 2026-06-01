@@ -6,7 +6,7 @@ import { promises as fs } from "fs";
 import path from "path";
 
 const MEMORY_DIR = path.join(process.cwd(), "data", "memories");
-const MAX_ENTRIES = 60; // keep the last 60 questions to stay within context window
+const MAX_ENTRIES = 30; // keep last 30 questions — enough context without bloating the prompt
 
 export async function getUserMemory(userId: string): Promise<string> {
   const file = path.join(MEMORY_DIR, `${userId}.md`);

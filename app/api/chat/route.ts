@@ -38,17 +38,24 @@ export async function POST(req: NextRequest) {
 
   const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
 
-  // Inject user memory as a system prompt prefix so the AI has context from past sessions.
+  // Cap history at last 20 messages — sending the full conversation on every
+  // turn adds tokens and slows the prefill phase on a CPU-only model.
+  const recentMessages = messages.slice(-20);
+
+  // Inject user memory as a system prompt — keep it brief (last 20 lines only).
   const memory = await getUserMemory(userId);
-  const allMessages: ChatMessage[] = memory
+  const memorySnippet = memory
+    ? memory.split("\n").filter(Boolean).slice(-20).join("\n")
+    : "";
+  const allMessages: ChatMessage[] = memorySnippet
     ? [
         {
           role: "system",
-          content: `You are a helpful, uncensored AI assistant. Here is a log of topics this user has asked about in previous sessions — use it for context but don't reference it explicitly unless asked:\n\n${memory}`
+          content: `You are a helpful, uncensored AI assistant. Context from this user's previous sessions:\n\n${memorySnippet}`
         },
-        ...messages
+        ...recentMessages
       ]
-    : messages;
+    : recentMessages;
 
   let ollamaStream: ReadableStream<Uint8Array>;
   try {
