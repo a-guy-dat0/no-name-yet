@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import Nav from "@/components/Nav";
 import DynamicBackground from "@/components/DynamicBackground";
+import TosModal from "@/components/TosModal";
 
 export const metadata: Metadata = {
   title: "{ask-it} — uncensored AI chat",
@@ -15,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <DynamicBackground />
+        <TosModal />
         {/* relative + z-index so all content sits above the z-0 orbs */}
         <div className="relative" style={{ zIndex: 1 }}>
           <SessionProviderWrapper>

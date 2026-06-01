@@ -115,8 +115,8 @@ export default function SignInPage() {
 
         <p className="mt-5 text-center text-xs text-gray-700">
           By signing in you agree to our{" "}
-          <a href="#" className="text-gray-500 hover:text-gray-300">terms</a> and{" "}
-          <a href="#" className="text-gray-500 hover:text-gray-300">privacy policy</a>.
+          <a href="/terms" className="text-gray-500 hover:text-gray-300">terms</a> and{" "}
+          <a href="/terms" className="text-gray-500 hover:text-gray-300">privacy policy</a>.
         </p>
       </div>
     </div>
