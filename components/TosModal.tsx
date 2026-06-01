@@ -6,7 +6,7 @@
 // continue, or they're sent away.
 
 import { useState, useEffect } from "react";
-import { TosContent } from "@/app/terms/page";
+import TosContent from "@/components/TosContent";
 
 const COOKIE = "ask-it-tos";
 const EXPIRES_DAYS = 365;
