@@ -147,7 +147,11 @@ export async function POST(req: NextRequest) {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "X-Content-Type-Options": "nosniff",
-      "Cache-Control": "no-cache"
+      "Cache-Control": "no-cache",
+      // Client reads this immediately after fetch() resolves — before any
+      // tokens arrive — so the sidebar updates the moment streaming starts.
+      "X-Conversation-Id": convId,
+      "Access-Control-Expose-Headers": "X-Conversation-Id"
     }
   });
 }

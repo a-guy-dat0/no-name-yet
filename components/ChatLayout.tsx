@@ -60,11 +60,24 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
     return () => clearInterval(id);
   }, [busy]);
 
-  // Load conversation list on mount.
+  // Load conversation list on mount. If any exist, auto-open the most
+  // recent one — so users land in their last chat instead of a blank screen.
   useEffect(() => {
     fetch("/api/conversations")
       .then((r) => r.json())
-      .then((data) => Array.isArray(data) && setConversations(data))
+      .then(async (data) => {
+        if (!Array.isArray(data)) return;
+        setConversations(data);
+        if (data.length > 0) {
+          const mostRecent = data[0]; // API returns newest first
+          setActiveId(mostRecent.id);
+          const res = await fetch(`/api/conversations/${mostRecent.id}`);
+          if (res.ok) {
+            const conv = await res.json();
+            setMessages(conv.messages ?? []);
+          }
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -155,6 +168,24 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
         setError(json.message || json.error || `Error ${res.status}`);
         if (json.usage) setUsage(json.usage);
         return;
+      }
+
+      // Server tells us the conversation ID in a header — read it right away
+      // so the sidebar shows the new chat as soon as streaming begins,
+      // not when it ends. This also makes the chat persist if user clicks
+      // "New chat" mid-stream.
+      const headerConvId = res.headers.get("X-Conversation-Id");
+      if (headerConvId) {
+        setActiveId(headerConvId);
+        const title = trimmed.slice(0, 60) || "New chat";
+        setConversations((prev) => {
+          if (prev.some(c => c.id === headerConvId)) {
+            return prev.map(c => c.id === headerConvId
+              ? { ...c, title, updatedAt: new Date().toISOString() }
+              : c);
+          }
+          return [{ id: headerConvId, title, updatedAt: new Date().toISOString() }, ...prev];
+        });
       }
 
       // Add empty assistant bubble; fill it token by token.
