@@ -16,10 +16,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <DynamicBackground />
-        <TosModal />
         {/* relative + z-index so all content sits above the z-0 orbs */}
         <div className="relative" style={{ zIndex: 1 }}>
           <SessionProviderWrapper>
+            <TosModal />
             <Nav />
             <main>{children}</main>
           </SessionProviderWrapper>
