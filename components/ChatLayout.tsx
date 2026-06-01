@@ -42,6 +42,21 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
   // Tracks which conversation owns the current stream so stale callbacks
   // from a previous chat don't bleed into a newly created one.
   const streamingConvRef = useRef<string | null>(null);
+  // Timestamp of the last token received — used by the inactivity watchdog.
+  const lastTokenAt = useRef<number>(0);
+
+  // Watchdog: if busy but no token has arrived for 1.5 s, assume the stream
+  // ended without a sentinel and unlock the UI.
+  useEffect(() => {
+    if (!busy) return;
+    const id = setInterval(() => {
+      if (lastTokenAt.current > 0 && Date.now() - lastTokenAt.current > 1500) {
+        setBusy(false);
+        lastTokenAt.current = 0;
+      }
+    }, 300);
+    return () => clearInterval(id);
+  }, [busy]);
 
   // Load conversation list on mount.
   useEffect(() => {
@@ -137,6 +152,7 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
       const isStale = () => streamingConvRef.current !== thisToken;
 
       setMessages([...next, { role: "assistant", content: "" }]);
+      lastTokenAt.current = Date.now(); // start the watchdog clock
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
       const SENTINEL = "\n<<<DONE>>>";
@@ -149,8 +165,10 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
         if (done || isStale()) break;
         rawBuffer += decoder.decode(value, { stream: true });
 
+        lastTokenAt.current = Date.now(); // reset watchdog on every chunk
         const sentinelIdx = rawBuffer.indexOf(SENTINEL);
         if (sentinelIdx !== -1) {
+          lastTokenAt.current = 0; // sentinel received — disarm watchdog
           displayText = rawBuffer.slice(0, sentinelIdx);
           if (!isStale()) {
             setMessages((prev) => [
