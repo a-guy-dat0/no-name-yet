@@ -4,6 +4,7 @@
 // Handles conversation CRUD, message persistence, and streaming.
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 
@@ -37,6 +38,7 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { data: session } = useSession();
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Tracks which conversation owns the current stream so stale callbacks
@@ -323,12 +325,12 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
           ))}
         </div>
 
-        {/* Usage at bottom of sidebar */}
-        <div className="border-t border-white/[0.07] p-3">
+        {/* Usage + user profile at bottom of sidebar */}
+        <div className="border-t border-white/[0.07] p-3 space-y-2">
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
             <div className="mb-1.5 flex items-center justify-between text-xs">
               <span className="text-gray-500">Tier {usage.tier} quota</span>
-              <Link href="/pricing" className="text-indigo-400 hover:underline">Upgrade</Link>
+              <Link href="/account" className="text-indigo-400 hover:underline">Upgrade</Link>
             </div>
             <div className="h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
               <div
@@ -340,6 +342,26 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
               {usage.remaining} of {usage.limit} left this {usage.period}
             </p>
           </div>
+
+          {/* User avatar + email — mixed into sidebar */}
+          {session?.user && (
+            <div className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2">
+              {session.user.image ? (
+                <img
+                  src={session.user.image}
+                  alt="avatar"
+                  className="h-7 w-7 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold text-white">
+                  {session.user.email?.[0]?.toUpperCase() ?? "?"}
+                </div>
+              )}
+              <span className="truncate text-xs text-gray-400">
+                {session.user.email}
+              </span>
+            </div>
+          )}
         </div>
       </aside>
 

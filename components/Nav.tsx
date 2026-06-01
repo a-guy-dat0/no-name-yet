@@ -55,27 +55,6 @@ export default function Nav() {
         </div>
       </header>
 
-      {/* Fixed bottom-left: avatar + email — away from the Send button */}
-      {status === "authenticated" && session?.user && (
-        <div className="fixed bottom-5 left-5 z-50 flex items-center gap-2.5 glass rounded-full pl-1 pr-4 py-1 shadow-lg">
-          {/* Avatar */}
-          {session.user.image ? (
-            <img
-              src={session.user.image}
-              alt="avatar"
-              className="h-8 w-8 rounded-full object-cover"
-            />
-          ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold text-white">
-              {session.user.email?.[0]?.toUpperCase() ?? "?"}
-            </div>
-          )}
-          {/* Email */}
-          <span className="text-xs text-gray-300 max-w-[160px] truncate">
-            {session.user.email}
-          </span>
-        </div>
-      )}
     </>
   );
 }
