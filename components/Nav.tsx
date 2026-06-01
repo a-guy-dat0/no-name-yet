@@ -13,10 +13,10 @@ export default function Nav() {
         className="sticky top-0 z-50 w-full border-b border-white/[0.07] backdrop-blur-2xl"
         style={{ background: "rgba(7,8,14,0.75)" }}
       >
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
+        <div className="flex w-full items-center px-3 py-3">
 
-          {/* Brand */}
-          <Link href="/" className="flex items-center gap-2.5 group">
+          {/* Brand — flush left */}
+          <Link href="/" className="flex items-center gap-2 group">
             <span className="icon-btn text-indigo-400 group-hover:text-indigo-300">
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
                 <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 3a1 1 0 110 2 1 1 0 010-2zm-1 4h2v5H9V9z"/>
@@ -25,8 +25,8 @@ export default function Nav() {
             <span className="text-sm font-semibold tracking-tight text-white">{"{ask-it}"}</span>
           </Link>
 
-          {/* Nav pills */}
-          <nav className="flex items-center gap-2 text-sm">
+          {/* Nav pills — pushed all the way to the right */}
+          <nav className="ml-auto flex items-center gap-2 text-sm pr-2">
             {status === "authenticated" ? (
               <>
                 {/* Liquid glass long-pill buttons */}
@@ -55,9 +55,9 @@ export default function Nav() {
         </div>
       </header>
 
-      {/* Fixed bottom-right: avatar + email */}
+      {/* Fixed bottom-left: avatar + email — away from the Send button */}
       {status === "authenticated" && session?.user && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 glass rounded-full pl-1 pr-4 py-1 shadow-lg">
+        <div className="fixed bottom-5 left-5 z-50 flex items-center gap-2.5 glass rounded-full pl-1 pr-4 py-1 shadow-lg">
           {/* Avatar */}
           {session.user.image ? (
             <img
