@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
         }
         await Promise.all([
           recordQuestion(userId, lastUserMsg, fullAnswer),
-          appendToMemory(userId, lastUserMsg, convId!)
+          appendToMemory(userId, lastUserMsg)
         ]);
       } catch (err) {
         console.error("[chat] post-stream DB error:", err);
@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
           });
         }
         await recordQuestion(userId, lastUserMsg, fullAnswer);
-        await appendToMemory(userId, lastUserMsg, convId!);
+        await appendToMemory(userId, lastUserMsg);
       } catch (err) {
         console.error("[chat] cancel-save error:", err);
       }
