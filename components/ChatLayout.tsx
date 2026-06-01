@@ -477,7 +477,7 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
               <button
                 type="submit"
                 disabled={outOfQuota || !input.trim()}
-                className="btn-brand shrink-0 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                className="glass glass-hover shrink-0 rounded-xl px-4 py-2 text-sm font-medium text-gray-200 disabled:opacity-30 hover:text-white"
               >
                 Send
               </button>
