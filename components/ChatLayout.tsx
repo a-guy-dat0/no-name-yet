@@ -468,18 +468,13 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
                 className="glass glass-hover relative shrink-0 flex items-center justify-center w-10 h-10 rounded-xl"
                 title="Stop generating"
               >
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle
-                    className="opacity-20"
-                    cx="12" cy="12" r="10"
-                    stroke="white" strokeWidth="2.5"
-                  />
-                  <path
-                    className="opacity-80"
-                    fill="white"
-                    d="M4 12a8 8 0 018-8V2a10 10 0 00-10 10h2z"
-                  />
+                {/* Spinning arc */}
+                <svg className="animate-spin absolute h-8 w-8" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" strokeOpacity="0.2" />
+                  <path d="M4 12a8 8 0 018-8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.9" />
                 </svg>
+                {/* Empty rounded square in the centre */}
+                <span className="h-3 w-3 rounded-sm border border-white/80" />
               </button>
             ) : (
               <button
