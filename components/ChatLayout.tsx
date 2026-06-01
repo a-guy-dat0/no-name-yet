@@ -461,17 +461,25 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
               style={{ minHeight: "36px", maxHeight: "160px" }}
             />
             {busy ? (
-              /* Stop button — spinning ring with a square in the centre */
+              /* Stop button — loading circle, click to cancel */
               <button
                 type="button"
                 onClick={stop}
-                className="relative shrink-0 flex items-center justify-center w-10 h-10 rounded-xl"
+                className="glass glass-hover relative shrink-0 flex items-center justify-center w-10 h-10 rounded-xl"
                 title="Stop generating"
               >
-                {/* Spinning ring */}
-                <span className="absolute inset-0 rounded-xl border-2 border-transparent border-t-white border-r-white animate-spin" />
-                {/* Stop square */}
-                <span className="h-3 w-3 rounded-sm bg-white" />
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle
+                    className="opacity-20"
+                    cx="12" cy="12" r="10"
+                    stroke="white" strokeWidth="2.5"
+                  />
+                  <path
+                    className="opacity-80"
+                    fill="white"
+                    d="M4 12a8 8 0 018-8V2a10 10 0 00-10 10h2z"
+                  />
+                </svg>
               </button>
             ) : (
               <button
