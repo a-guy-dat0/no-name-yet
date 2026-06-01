@@ -1,93 +1,170 @@
-// Account page — glass panels for profile, plan, and usage.
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
+"use client";
+
+// Account page — profile, usage, data controls, danger zone.
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { getUsage } from "@/lib/usage";
-import { TIERS } from "@/lib/tiers";
-import CancelButton from "@/components/CancelButton";
+import { useState, useEffect } from "react";
 
-export default async function AccountPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/");
+interface Usage {
+  tier: number; limit: number; period: string;
+  used: number; remaining: number; resetsAt: string;
+}
 
-  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
-  const usage = await getUsage(session.user.id);
-  const tier = TIERS[(user?.tier ?? 0) as 0 | 1 | 2 | 3];
-  const pct = Math.round((usage.used / usage.limit) * 100);
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="glass rounded-3xl p-6 space-y-4">
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function ActionButton({
+  label, description, buttonLabel, variant = "default", onClick, busy
+}: {
+  label: string; description: string; buttonLabel: string;
+  variant?: "default" | "danger"; onClick: () => void; busy?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div>
+        <p className="text-sm font-medium text-white">{label}</p>
+        <p className="text-xs text-gray-500">{description}</p>
+      </div>
+      <button
+        onClick={onClick}
+        disabled={busy}
+        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-40 ${
+          variant === "danger"
+            ? "border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+            : "glass glass-hover text-gray-200 hover:text-white"
+        }`}
+      >
+        {busy ? "…" : buttonLabel}
+      </button>
+    </div>
+  );
+}
+
+export default function AccountPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/signin");
+  }, [status, router]);
+
+  useEffect(() => {
+    fetch("/api/usage").then(r => r.json()).then(setUsage).catch(() => {});
+  }, []);
+
+  async function action(key: string, url: string, confirm?: string) {
+    if (confirm && !window.confirm(confirm)) return;
+    setBusy(key);
+    setDone(null);
+    const res = await fetch(url, { method: "POST" });
+    setBusy(null);
+    if (res.ok) {
+      setDone(key);
+      if (key === "delete") { await signOut({ callbackUrl: "/" }); }
+      if (key === "clearChats") { router.refresh(); }
+    }
+  }
+
+  if (status === "loading") return null;
+  const user = session?.user;
+  const pct = usage ? Math.round((usage.used / usage.limit) * 100) : 0;
+  const tierNames = ["Free", "Tier 1", "Tier 2", "Tier 3"];
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5 py-8">
-      <h1 className="text-2xl font-bold text-white">Your account</h1>
+    <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
+      <h1 className="text-2xl font-bold text-white">Account</h1>
 
-      {/* Profile */}
-      <div className="glass rounded-3xl p-6">
+      {/* ── Profile ── */}
+      <Section title="Profile">
         <div className="flex items-center gap-4">
-          <div className="icon-btn h-12 w-12 rounded-2xl border-white/[0.1] bg-white/[0.05] text-gray-300">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
-                 className="h-5 w-5" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round"
-                    d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
-            </svg>
+          {user?.image ? (
+            <img src={user.image} alt="avatar" className="h-14 w-14 rounded-2xl object-cover" />
+          ) : (
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-xl font-bold text-white">
+              {user?.email?.[0]?.toUpperCase() ?? "?"}
+            </div>
+          )}
+          <div className="flex-1">
+            <p className="font-semibold text-white">{user?.name ?? "—"}</p>
+            <p className="text-sm text-gray-400">{user?.email}</p>
           </div>
-          <div>
-            <p className="text-sm font-medium text-white">{session.user.name ?? "—"}</p>
-            <p className="text-xs text-gray-500">{session.user.email}</p>
-          </div>
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="glass glass-hover rounded-xl px-4 py-2 text-sm text-gray-300 hover:text-white"
+          >
+            Sign out
+          </button>
         </div>
-      </div>
+      </Section>
 
-      {/* Plan */}
-      <div className="glass rounded-3xl p-6 space-y-5">
-        <div className="flex items-start justify-between">
+      {/* ── Plan & usage ── */}
+      <Section title="Plan & Usage">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wider">Current plan</p>
-            <p className="mt-1 text-lg font-semibold text-white">{tier.name}</p>
+            <p className="font-semibold text-white">{tierNames[usage?.tier ?? 0]}</p>
             <p className="text-sm text-gray-400">
-              {tier.limit} questions / {tier.period}
-              {tier.priceUsd > 0 && ` — $${tier.priceUsd}/mo`}
+              {usage ? `${usage.used} / ${usage.limit} questions used this ${usage.period}` : "Loading…"}
             </p>
-            {user?.subscriptionStatus && (
-              <p className="mt-1 text-xs text-gray-600">
-                Status: {user.subscriptionStatus}
-                {user.subscriptionRenewsAt &&
-                  ` · renews ${user.subscriptionRenewsAt.toLocaleDateString()}`}
-              </p>
-            )}
           </div>
-          <div className="flex gap-2">
-            <Link href="/pricing"
-                  className="btn-brand rounded-xl px-4 py-2 text-sm font-semibold text-white">
-              Change plan
-            </Link>
-            {user?.paypalSubscriptionId && user.subscriptionStatus === "ACTIVE" && (
-              <CancelButton />
-            )}
-          </div>
+          <Link href="/pricing" className="glass glass-hover rounded-xl px-4 py-2 text-sm text-gray-300 hover:text-white">
+            Change plan
+          </Link>
         </div>
+        {usage && (
+          <>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+              <div
+                className={`h-full rounded-full transition-all ${pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-indigo-500"}`}
+                style={{ width: `${Math.min(pct, 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-600">
+              {usage.remaining} remaining · resets {new Date(usage.resetsAt).toLocaleDateString()}
+            </p>
+          </>
+        )}
+      </Section>
 
-        {/* Usage bar */}
-        <div>
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="text-gray-500">This {usage.period}</span>
-            <span className="text-gray-400">
-              <span className="text-white">{usage.used}</span> / {usage.limit} questions
-            </span>
-          </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
-            <div
-              className={`h-full rounded-full transition-all ${
-                pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-indigo-500"
-              }`}
-              style={{ width: `${Math.min(pct, 100)}%` }}
-            />
-          </div>
-          <p className="mt-1.5 text-xs text-gray-600">
-            Resets {new Date(usage.resetsAt).toLocaleDateString()}
-          </p>
-        </div>
-      </div>
+      {/* ── Data ── */}
+      <Section title="Your Data">
+        <ActionButton
+          label="Clear AI memory"
+          description="The AI will forget everything it learned about you from past sessions."
+          buttonLabel={done === "clearMemory" ? "Cleared ✓" : "Clear memory"}
+          busy={busy === "clearMemory"}
+          onClick={() => action("clearMemory", "/api/account/clear-memory")}
+        />
+        <div className="divider" />
+        <ActionButton
+          label="Delete all chats"
+          description="Permanently deletes every conversation and its messages. Cannot be undone."
+          buttonLabel={done === "clearChats" ? "Deleted ✓" : "Delete all chats"}
+          busy={busy === "clearChats"}
+          onClick={() => action("clearChats", "/api/account/clear-chats", "Delete all chats? This cannot be undone.")}
+        />
+      </Section>
+
+      {/* ── Danger zone ── */}
+      <Section title="Danger Zone">
+        <ActionButton
+          label="Delete account"
+          description="Permanently deletes your account, all chats, and all data. Immediate and irreversible."
+          buttonLabel="Delete my account"
+          variant="danger"
+          busy={busy === "delete"}
+          onClick={() => action("delete", "/api/account/delete", "Permanently delete your account? This cannot be undone.")}
+        />
+      </Section>
     </div>
   );
 }
