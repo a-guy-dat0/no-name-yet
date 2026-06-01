@@ -74,6 +74,7 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
     setActiveId(null);
     setError(null);
     setBusy(false);
+    streamingConvRef.current = null; // invalidate any in-flight stream
     const res = await fetch("/api/conversations", { method: "POST" });
     if (!res.ok) return;
     const conv: Conversation = await res.json();
@@ -129,9 +130,11 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
       }
 
       // Add empty assistant bubble; fill it token by token.
-      // Only update state if this stream still belongs to the active conv.
-      const thisConv = convId;
-      const isStale = () => streamingConvRef.current !== thisConv;
+      // Use a unique token per send() call so stale stream callbacks from
+      // a previous chat are ignored after the user starts a new one.
+      const thisToken = Date.now().toString(36);
+      streamingConvRef.current = thisToken;
+      const isStale = () => streamingConvRef.current !== thisToken;
 
       setMessages([...next, { role: "assistant", content: "" }]);
       const reader = res.body!.getReader();
