@@ -68,34 +68,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Create (or verify) the conversation AND the user message in a single
-  // transaction so they share one SQLite connection — avoiding the FK
-  // violation that happens when separate connections can't see each other's
-  // uncommitted writes.
+  // Ensure the conversation exists. If a conversationId was supplied, verify it
+  // actually belongs to this user (client-side pre-creation can race or fail
+  // silently). If it doesn't exist, create a fresh one instead.
   let convId: string;
-  await prisma.$transaction(async (tx) => {
-    if (conversationId) {
-      const existing = await tx.conversation.findFirst({
-        where: { id: conversationId, userId },
-        select: { id: true }
-      });
-      if (existing) {
-        convId = existing.id;
-      } else {
-        const c = await tx.conversation.create({
-          data: { userId, title: lastUserMsg.slice(0, 60) || "New chat" }
-        });
-        convId = c.id;
-      }
-    } else {
-      const c = await tx.conversation.create({
-        data: { userId, title: lastUserMsg.slice(0, 60) || "New chat" }
-      });
-      convId = c.id;
-    }
-    await tx.message.create({
-      data: { conversationId: convId!, role: "user", content: lastUserMsg }
+  if (conversationId) {
+    const existing = await prisma.conversation.findFirst({
+      where: { id: conversationId, userId },
+      select: { id: true }
     });
+    convId = existing?.id ?? (await prisma.conversation.create({
+      data: { userId, title: lastUserMsg.slice(0, 60) || "New chat" }
+    })).id;
+  } else {
+    convId = (await prisma.conversation.create({
+      data: { userId, title: lastUserMsg.slice(0, 60) || "New chat" }
+    })).id;
+  }
+
+  // Save the user message immediately so it appears even if the stream is interrupted.
+  await prisma.message.create({
+    data: { conversationId: convId, role: "user", content: lastUserMsg }
   });
 
   let fullAnswer = "";
@@ -120,19 +113,37 @@ export async function POST(req: NextRequest) {
       // Persist reply. Check conv still exists first (it can be deleted
       // mid-stream by the client) — if gone, recreate it so the FK holds.
       try {
-        // Use a transaction so assistant message + conversation update
-        // share the same connection and the FK is always visible.
-        await prisma.$transaction(async (tx) => {
-          await tx.message.create({
-            data: { conversationId: convId!, role: "assistant", content: fullAnswer || "(no response)" }
-          });
-          await tx.conversation.update({
-            where: { id: convId! },
-            data: { updatedAt: new Date(), title: lastUserMsg.slice(0, 60) || "New chat" }
-          });
+        console.log("[chat] stream done, convId=", convId, "answerLen=", fullAnswer.length);
+        const stillThere = await prisma.conversation.findUnique({
+          where: { id: convId }, select: { id: true }
         });
-        await recordQuestion(userId, lastUserMsg, fullAnswer);
-        await appendToMemory(userId, lastUserMsg);
+        if (!stillThere) {
+          console.log("[chat] conv vanished, recreating");
+          const recreated = await prisma.conversation.create({
+            data: { userId, title: lastUserMsg.slice(0, 60) || "New chat" }
+          });
+          convId = recreated.id;
+          // Save the user message too since the original was orphaned by cascade.
+          await prisma.message.create({
+            data: { conversationId: convId, role: "user", content: lastUserMsg }
+          });
+        }
+        await prisma.message.create({
+          data: { conversationId: convId, role: "assistant", content: fullAnswer || "(no response)" }
+        });
+        await prisma.conversation.update({
+          where: { id: convId }, data: { updatedAt: new Date() }
+        });
+        if (!conversationId) {
+          await prisma.conversation.update({
+            where: { id: convId },
+            data: { title: lastUserMsg.slice(0, 60) || "New chat" }
+          });
+        }
+        await Promise.all([
+          recordQuestion(userId, lastUserMsg, fullAnswer),
+          appendToMemory(userId, lastUserMsg)
+        ]);
       } catch (err) {
         console.error("[chat] post-stream DB error:", err);
       }
