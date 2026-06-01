@@ -1,6 +1,6 @@
 "use client";
 
-// Frosted-glass nav bar — sign-in routes to /signin (Google + email magic link).
+// Nav — liquid glass pill buttons, no Pricing, user avatar + email bottom-right.
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 
@@ -8,57 +8,74 @@ export default function Nav() {
   const { data: session, status } = useSession();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/[0.07] backdrop-blur-2xl"
-            style={{ background: "rgba(7,8,14,0.75)" }}>
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
+    <>
+      <header
+        className="sticky top-0 z-50 w-full border-b border-white/[0.07] backdrop-blur-2xl"
+        style={{ background: "rgba(7,8,14,0.75)" }}
+      >
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
 
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          {/* Rounded-square logo icon */}
-          <span className="icon-btn text-indigo-400 group-hover:text-indigo-300">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-              <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 3a1 1 0 110 2 1 1 0 010-2zm-1 4h2v5H9V9z"/>
-            </svg>
-          </span>
-          <span className="text-sm font-semibold tracking-tight text-white">
-            {"{ask-it}"}
-          </span>
-        </Link>
-
-        {/* Nav links */}
-        <nav className="flex items-center gap-1 text-sm">
-          <Link href="/pricing"
-                className="rounded-lg px-3 py-1.5 text-gray-400 transition-colors hover:bg-white/[0.05] hover:text-white">
-            Pricing
-          </Link>
-          <Link href="/chat"
-                className="rounded-lg px-3 py-1.5 text-gray-400 transition-colors hover:bg-white/[0.05] hover:text-white">
-            Chat
+          {/* Brand */}
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <span className="icon-btn text-indigo-400 group-hover:text-indigo-300">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 3a1 1 0 110 2 1 1 0 010-2zm-1 4h2v5H9V9z"/>
+              </svg>
+            </span>
+            <span className="text-sm font-semibold tracking-tight text-white">{"{ask-it}"}</span>
           </Link>
 
-          {status === "authenticated" ? (
-            <>
-              <Link href="/account"
-                    className="rounded-lg px-3 py-1.5 text-gray-400 transition-colors hover:bg-white/[0.05] hover:text-white">
-                Account
-              </Link>
-              <button
-                onClick={() => signOut()}
-                className="ml-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-gray-300 backdrop-blur-sm transition-all hover:bg-white/[0.08] hover:text-white"
+          {/* Nav pills */}
+          <nav className="flex items-center gap-2 text-sm">
+            {status === "authenticated" ? (
+              <>
+                {/* Liquid glass long-pill buttons */}
+                <Link
+                  href="/chat"
+                  className="glass glass-hover rounded-full px-5 py-1.5 text-gray-300 transition-all hover:text-white"
+                >
+                  Chat
+                </Link>
+                <Link
+                  href="/account"
+                  className="glass glass-hover rounded-full px-5 py-1.5 text-gray-300 transition-all hover:text-white"
+                >
+                  Account
+                </Link>
+              </>
+            ) : (
+              <Link
+                href="/signin"
+                className="btn-brand rounded-full px-5 py-1.5 font-medium text-white"
               >
-                Sign out
-              </button>
-            </>
+                Sign in
+              </Link>
+            )}
+          </nav>
+        </div>
+      </header>
+
+      {/* Fixed bottom-right: avatar + email */}
+      {status === "authenticated" && session?.user && (
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 glass rounded-full pl-1 pr-4 py-1 shadow-lg">
+          {/* Avatar */}
+          {session.user.image ? (
+            <img
+              src={session.user.image}
+              alt="avatar"
+              className="h-8 w-8 rounded-full object-cover"
+            />
           ) : (
-            <Link
-              href="/signin"
-              className="ml-1 rounded-lg px-4 py-1.5 font-medium text-white btn-brand"
-            >
-              Sign in
-            </Link>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold text-white">
+              {session.user.email?.[0]?.toUpperCase() ?? "?"}
+            </div>
           )}
-        </nav>
-      </div>
-    </header>
+          {/* Email */}
+          <span className="text-xs text-gray-300 max-w-[160px] truncate">
+            {session.user.email}
+          </span>
+        </div>
+      )}
+    </>
   );
 }
