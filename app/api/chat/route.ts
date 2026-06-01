@@ -110,25 +110,28 @@ export async function POST(req: NextRequest) {
         console.error("[chat] stream read error:", err);
       }
 
-      // Persist the full assistant reply and update quota — await so usage is accurate.
-      await Promise.all([
-        prisma.message.create({ data: { conversationId: convId!, role: "assistant", content: fullAnswer } }),
-        recordQuestion(userId, lastUserMsg, fullAnswer),
-        appendToMemory(userId, lastUserMsg),
-        // Set conversation title from first user message if it was just created.
-        conversationId
-          ? Promise.resolve()
-          : prisma.conversation.update({ where: { id: convId! }, data: { title: lastUserMsg.slice(0, 60) || "New chat" } }),
-        // Bump updatedAt on the conversation so it floats to the top of the list.
-        prisma.conversation.update({ where: { id: convId! }, data: { updatedAt: new Date() } })
-      ]);
+      // Persist reply + update quota. Wrapped in try/catch so a DB error
+      // never blocks the sentinel — the client must always get the sentinel
+      // or it stays stuck in "thinking" state forever.
+      try {
+        await Promise.all([
+          prisma.message.create({ data: { conversationId: convId!, role: "assistant", content: fullAnswer } }),
+          recordQuestion(userId, lastUserMsg, fullAnswer),
+          appendToMemory(userId, lastUserMsg),
+          conversationId
+            ? Promise.resolve()
+            : prisma.conversation.update({ where: { id: convId! }, data: { title: lastUserMsg.slice(0, 60) || "New chat" } }),
+          prisma.conversation.update({ where: { id: convId! }, data: { updatedAt: new Date() } })
+        ]);
+      } catch (err) {
+        console.error("[chat] post-stream DB error:", err);
+      }
 
-      // Send the sentinel + metadata as the final chunk.
-      // Use a text sentinel (not null-byte) so Nginx doesn't strip it.
-      const newUsage = await getUsage(userId);
+      // Always send sentinel — even if DB ops failed — so the client unlocks.
+      const newUsage = await getUsage(userId).catch(() => usage);
       const meta = JSON.stringify({ usage: newUsage, conversationId: convId });
-      controller.enqueue(encoder.encode(`\n<<<DONE>>>${meta}`));
-      controller.close();
+      try { controller.enqueue(encoder.encode(`\n<<<DONE>>>${meta}`)); } catch {}
+      try { controller.close(); } catch {}
     },
     cancel() {
       // Client disconnected mid-stream — still try to save what arrived.
