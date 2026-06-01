@@ -9,6 +9,7 @@ declare module "next-auth" {
       image?: string | null;
       tier: 0 | 1 | 2 | 3;
       subscriptionStatus: string | null;
+      tosAcceptedAt: string | null;
     };
   }
 }
