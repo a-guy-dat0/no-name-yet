@@ -1,4 +1,4 @@
-// Prisma schema — {no name yet}
+// Prisma schema — {ask-it}
 // SQLite for simplicity. Swap provider to "postgresql" later if you grow.
 
 generator client {

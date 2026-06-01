@@ -23,7 +23,7 @@ export default function LandingPage() {
           </span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-400">
-          {"{no name yet}"} runs a powerful uncensored model on dedicated hardware.
+          {"{ask-it}"} runs a powerful uncensored model on dedicated hardware.
           No filters, no judgment — just honest answers. Sign in and start in seconds.
         </p>
 

@@ -1,4 +1,4 @@
-# {no name yet}
+# {ask-it}
 
 A ChatGPT-style web app backed by an uncensored open-source model
 (`hf.co/Jiunsong/supergemma4-26b-uncensored-gguf-v2`) running locally via
@@ -61,5 +61,5 @@ prisma/schema.prisma   DB schema
 
 ## Where to put the brand name
 
-Search the codebase for `{no name yet}` — that's the placeholder. When you
+Search the codebase for `{ask-it}` — that's the placeholder. When you
 land on a name, do a project-wide find-and-replace.

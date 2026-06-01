@@ -1,4 +1,4 @@
-# Deploying {no name yet} on a Hostinger VPS (Ubuntu 24.04 LTS)
+# Deploying {ask-it} on a Hostinger VPS (Ubuntu 24.04 LTS)
 
 This is a step-by-step guide. Run each block in order. Anything in `<angle brackets>` you replace with your own value.
 
@@ -164,7 +164,7 @@ Certbot auto-renews via a systemd timer; you're done with SSL.
 
 1. Go to <https://console.cloud.google.com>.
 2. Create a project (or pick an existing one).
-3. **APIs & Services → OAuth consent screen**: choose **External**, fill in the app name (`{no name yet}`), support email, dev contact. Add the scope `email`, `profile`, `openid`. Add your Google account as a test user while you're still in test mode (or publish it).
+3. **APIs & Services → OAuth consent screen**: choose **External**, fill in the app name (`{ask-it}`), support email, dev contact. Add the scope `email`, `profile`, `openid`. Add your Google account as a test user while you're still in test mode (or publish it).
 4. **APIs & Services → Credentials → Create credentials → OAuth client ID**:
    - Application type: **Web application**
    - Authorized JavaScript origins: `https://<your-domain.com>`
@@ -189,7 +189,7 @@ You need a **Business** PayPal account.
 ### 7a. Create a REST app
 
 1. Go to <https://developer.paypal.com> → log in → **Apps & Credentials**.
-2. While testing, stay on **Sandbox**. Click **Create App** → name it `{no name yet}` → **Merchant**.
+2. While testing, stay on **Sandbox**. Click **Create App** → name it `{ask-it}` → **Merchant**.
 3. Save the **Client ID** and **Secret**.
 
 ### 7b. Create three subscription products + plans
@@ -212,8 +212,8 @@ curl -s -X POST https://api-m.sandbox.paypal.com/v1/catalogs/products \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "{no name yet} subscription",
-    "description": "Access to {no name yet} AI chat",
+    "name": "{ask-it} subscription",
+    "description": "Access to {ask-it} AI chat",
     "type": "SERVICE",
     "category": "SOFTWARE"
   }'
@@ -324,4 +324,4 @@ crontab -e
 
 ---
 
-That's the whole runway: fresh VPS → live site with sign-in, billing, and your local model. When you pick a brand name, find-and-replace `{no name yet}` across the repo and update the metadata in `app/layout.tsx`.
+That's the whole runway: fresh VPS → live site with sign-in, billing, and your local model. When you pick a brand name, find-and-replace `{ask-it}` across the repo and update the metadata in `app/layout.tsx`.

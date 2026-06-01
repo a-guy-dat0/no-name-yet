@@ -21,7 +21,7 @@ export default function Nav() {
             </svg>
           </span>
           <span className="text-sm font-semibold tracking-tight text-white">
-            {"{no name yet}"}
+            {"{ask-it}"}
           </span>
         </Link>
 

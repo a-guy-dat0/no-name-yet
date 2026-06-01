@@ -17,14 +17,14 @@ async function sendVerificationRequest({ identifier, url }: SendVerificationRequ
     body: JSON.stringify({
       from,
       to: identifier,
-      subject: "Your {no name yet} sign-in link",
+      subject: "Your {ask-it} sign-in link",
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-          <h2 style="color:#4f46e5">{no name yet}</h2>
+          <h2 style="color:#4f46e5">{ask-it}</h2>
           <p>Click the button below to sign in. This link expires in 24 hours and can only be used once.</p>
           <a href="${url}"
              style="display:inline-block;background:#4f46e5;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin:16px 0">
-            Sign in to {no name yet}
+            Sign in to {ask-it}
           </a>
           <p style="color:#6b7280;font-size:13px">
             If you didn't request this, you can safely ignore this email.

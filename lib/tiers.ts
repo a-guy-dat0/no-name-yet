@@ -1,4 +1,4 @@
-// Tier definitions for {no name yet}
+// Tier definitions for {ask-it}
 // Tier 0: free        — 5 questions / MONTH
 // Tier 1: $10 / month — 25 questions / WEEK
 // Tier 2: $20 / month — 55 questions / WEEK
@@ -24,7 +24,7 @@ export const TIERS: Record<TierId, Tier> = {
     limit: 5,
     period: "month",
     highlights: [
-      "Try {no name yet} with 5 questions per month",
+      "Try {ask-it} with 5 questions per month",
       "Same uncensored model as paid tiers",
       "No credit card required"
     ]

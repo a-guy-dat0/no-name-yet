@@ -5,7 +5,7 @@ import Nav from "@/components/Nav";
 import DynamicBackground from "@/components/DynamicBackground";
 
 export const metadata: Metadata = {
-  title: "{no name yet} — uncensored AI chat",
+  title: "{ask-it} — uncensored AI chat",
   description:
     "Chat with an uncensored open-source AI model. Pay only for what you use, cancel anytime."
 };
