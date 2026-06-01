@@ -94,21 +94,12 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
   }
 
   // Send a message and stream the response.
+  // Conversation creation is handled server-side — the server verifies or
+  // creates the conversation and sends back the real ID in the sentinel.
   async function send() {
     const trimmed = input.trim();
     if (!trimmed || busy) return;
     setError(null);
-
-    // Create a conversation on-the-fly if none is selected.
-    let convId = activeId;
-    if (!convId) {
-      const res = await fetch("/api/conversations", { method: "POST" });
-      if (!res.ok) return;
-      const conv: Conversation = await res.json();
-      setConversations((prev) => [conv, ...prev]);
-      setActiveId(conv.id);
-      convId = conv.id;
-    }
 
     const userMsg: Message = { role: "user", content: trimmed };
     const next = [...messages, userMsg];
@@ -118,7 +109,7 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
       textareaRef.current.style.height = "auto";
     }
     setBusy(true);
-    streamingConvRef.current = convId; // mark this conv as the active stream
+    streamingConvRef.current = activeId; // mark current conv as the active stream
 
     try {
       const res = await fetch("/api/chat", {
@@ -126,7 +117,7 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: next.map(({ role, content }) => ({ role, content })),
-          conversationId: convId
+          conversationId: activeId ?? undefined
         })
       });
 
@@ -168,13 +159,22 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
               if (meta.usage) { setUsage(meta.usage); metaParsed = true; }
               if (meta.conversationId) {
                 const firstUserContent = next.find(m => m.role === "user")?.content ?? "";
-                setConversations((prev) =>
-                  prev.map((c) =>
-                    c.id === meta.conversationId
-                      ? { ...c, title: firstUserContent.slice(0, 60) || c.title, updatedAt: new Date().toISOString() }
-                      : c
-                  )
-                );
+                const title = firstUserContent.slice(0, 60) || "New chat";
+                setActiveId(meta.conversationId);
+                streamingConvRef.current = meta.conversationId;
+                setConversations((prev) => {
+                  const exists = prev.some(c => c.id === meta.conversationId);
+                  if (exists) {
+                    // Update title + timestamp on existing entry
+                    return prev.map(c =>
+                      c.id === meta.conversationId
+                        ? { ...c, title, updatedAt: new Date().toISOString() }
+                        : c
+                    );
+                  }
+                  // Server created a new conversation — add it to the top
+                  return [{ id: meta.conversationId, title, updatedAt: new Date().toISOString() }, ...prev];
+                });
               }
             } catch {}
           }

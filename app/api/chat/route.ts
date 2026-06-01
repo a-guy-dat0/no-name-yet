@@ -68,13 +68,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Ensure the conversation exists; create one ad-hoc if none was supplied.
-  let convId = conversationId;
-  if (!convId) {
-    const conv = await prisma.conversation.create({
-      data: { userId, title: lastUserMsg.slice(0, 60) || "New chat" }
+  // Ensure the conversation exists. If a conversationId was supplied, verify it
+  // actually belongs to this user (client-side pre-creation can race or fail
+  // silently). If it doesn't exist, create a fresh one instead.
+  let convId: string;
+  if (conversationId) {
+    const existing = await prisma.conversation.findFirst({
+      where: { id: conversationId, userId },
+      select: { id: true }
     });
-    convId = conv.id;
+    convId = existing?.id ?? (await prisma.conversation.create({
+      data: { userId, title: lastUserMsg.slice(0, 60) || "New chat" }
+    })).id;
+  } else {
+    convId = (await prisma.conversation.create({
+      data: { userId, title: lastUserMsg.slice(0, 60) || "New chat" }
+    })).id;
   }
 
   // Save the user message immediately so it appears even if the stream is interrupted.
