@@ -44,6 +44,8 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
   const streamingConvRef = useRef<string | null>(null);
   // Timestamp of the last token received — used by the inactivity watchdog.
   const lastTokenAt = useRef<number>(0);
+  // AbortController for the current fetch — lets the stop button cancel it.
+  const abortRef = useRef<AbortController | null>(null);
 
   // Watchdog: if busy but no token has arrived for 1.5 s, assume the stream
   // ended without a sentinel and unlock the UI.
@@ -109,6 +111,14 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
     }
   }
 
+  // Stop the current generation.
+  function stop() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setBusy(false);
+    lastTokenAt.current = 0;
+  }
+
   // Send a message and stream the response.
   // Conversation creation is handled server-side — the server verifies or
   // creates the conversation and sends back the real ID in the sentinel.
@@ -125,12 +135,15 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
       textareaRef.current.style.height = "auto";
     }
     setBusy(true);
-    streamingConvRef.current = activeId; // mark current conv as the active stream
+    streamingConvRef.current = activeId;
+    const abort = new AbortController();
+    abortRef.current = abort;
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: abort.signal,
         body: JSON.stringify({
           messages: next.map(({ role, content }) => ({ role, content })),
           conversationId: activeId ?? undefined
@@ -394,13 +407,28 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
               className="flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-white placeholder-gray-600 outline-none"
               style={{ minHeight: "36px", maxHeight: "160px" }}
             />
-            <button
-              type="submit"
-              disabled={outOfQuota || !input.trim()}
-              className="btn-brand shrink-0 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-            >
-              {busy ? "…" : "Send"}
-            </button>
+            {busy ? (
+              /* Stop button — spinning ring with a square in the centre */
+              <button
+                type="button"
+                onClick={stop}
+                className="relative shrink-0 flex items-center justify-center w-10 h-10 rounded-xl"
+                title="Stop generating"
+              >
+                {/* Spinning ring */}
+                <span className="absolute inset-0 rounded-xl border-2 border-transparent border-t-white border-r-white animate-spin" />
+                {/* Stop square */}
+                <span className="h-3 w-3 rounded-sm bg-white" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={outOfQuota || !input.trim()}
+                className="btn-brand shrink-0 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+              >
+                Send
+              </button>
+            )}
           </form>
         </div>
       </div>
