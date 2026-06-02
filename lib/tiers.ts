@@ -67,16 +67,17 @@ export const TIERS: Record<TierId, Tier> = {
   }
 };
 
-export function paypalPlanIdForTier(tier: TierId): string | undefined {
-  if (tier === 1) return process.env.PAYPAL_PLAN_ID_TIER1;
-  if (tier === 2) return process.env.PAYPAL_PLAN_ID_TIER2;
-  if (tier === 3) return process.env.PAYPAL_PLAN_ID_TIER3;
-  return undefined;
-}
+// Gumroad product URLs — used by the checkout page to redirect to the right product.
+export const GUMROAD_URLS: Record<TierId, string | undefined> = {
+  0: undefined,
+  1: process.env.GUMROAD_PRODUCT_TIER1 ?? "https://superdrea.gumroad.com/l/qvmshq",
+  2: process.env.GUMROAD_PRODUCT_TIER2 ?? "https://superdrea.gumroad.com/l/wqwptw",
+  3: process.env.GUMROAD_PRODUCT_TIER3 ?? "https://superdrea.gumroad.com/l/gxbbee",
+};
 
-export function tierFromPlanId(planId: string): TierId | null {
-  if (planId === process.env.PAYPAL_PLAN_ID_TIER1) return 1;
-  if (planId === process.env.PAYPAL_PLAN_ID_TIER2) return 2;
-  if (planId === process.env.PAYPAL_PLAN_ID_TIER3) return 3;
+export function tierFromGumroadProductId(productId: string): TierId | null {
+  if (productId === "qvmshq") return 1;
+  if (productId === "wqwptw") return 2;
+  if (productId === "gxbbee") return 3;
   return null;
 }
