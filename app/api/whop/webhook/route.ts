@@ -9,17 +9,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { tierFromWhopPlanId } from "@/lib/tiers";
+import { createHmac } from "crypto";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
-  if (!body) return NextResponse.json({ ok: true });
+function verifySignature(rawBody: string, signature: string | null): boolean {
+  const secret = process.env.WHOP_WEBHOOK_SECRET;
+  if (!secret || !signature) return false;
+  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+  return expected === signature;
+}
 
+export async function POST(req: NextRequest) {
+  const rawBody = await req.text();
+  const signature = req.headers.get("whop-signature") ?? req.headers.get("x-whop-signature");
+
+  if (!verifySignature(rawBody, signature)) {
+    console.warn("[whop] invalid signature — rejected");
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  const body = JSON.parse(rawBody);
   const action: string = body.action ?? "";
   const data = body.data ?? {};
 
-  // Whop sends the user's email inside the membership object
   const email: string = data.user?.email ?? data.email ?? "";
   const planId: string = data.plan_id ?? data.product?.plan_id ?? "";
 
