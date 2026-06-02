@@ -12,7 +12,7 @@ export default function LandingPage() {
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-1.5 backdrop-blur-sm">
           <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-[0_0_6px_2px_rgba(99,102,241,0.6)]" />
           <span className="text-xs font-medium tracking-wide text-gray-300">
-            Uncensored · Open-source · Private
+            Crazy · Open-source · Private
           </span>
         </div>
 
