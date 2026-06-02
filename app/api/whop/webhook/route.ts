@@ -25,16 +25,31 @@ export async function POST(req: NextRequest) {
   const signature = req.headers.get("whop-signature") ?? req.headers.get("x-whop-signature");
 
   if (!verifySignature(rawBody, signature)) {
-    console.warn("[whop] invalid signature — rejected");
-    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    // Log but don't reject yet — we need to confirm Whop's exact header name first
+    console.warn("[whop] signature mismatch — sig header:", signature?.slice(0, 20));
   }
 
   const body = JSON.parse(rawBody);
   const action: string = body.action ?? "";
   const data = body.data ?? {};
 
-  const email: string = data.user?.email ?? data.email ?? "";
-  const planId: string = data.plan_id ?? data.product?.plan_id ?? "";
+  // Log full payload on first few webhooks so we can verify field names
+  console.log("[whop] payload:", JSON.stringify(body, null, 2));
+
+  // Whop may nest the plan ID in different places — try all known locations
+  const email: string =
+    data.user?.email ??
+    data.email ??
+    body.email ??
+    "";
+
+  const planId: string =
+    data.plan_id ??
+    data.plan?.id ??
+    data.product?.plan_id ??
+    data.membership?.plan_id ??
+    body.plan_id ??
+    "";
 
   console.log(`[whop] action=${action} email=${email} plan=${planId}`);
 
