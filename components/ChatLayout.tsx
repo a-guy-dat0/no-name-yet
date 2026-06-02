@@ -150,6 +150,13 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
       textareaRef.current.style.height = "auto";
     }
     setBusy(true);
+    // Optimistically decrement quota the instant Send is pressed — the
+    // sentinel will confirm the real server-side count when it arrives.
+    setUsage(prev => ({
+      ...prev,
+      used: prev.used + 1,
+      remaining: Math.max(0, prev.remaining - 1)
+    }));
     streamingConvRef.current = activeId;
     const abort = new AbortController();
     abortRef.current = abort;

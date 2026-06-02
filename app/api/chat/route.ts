@@ -110,49 +110,49 @@ export async function POST(req: NextRequest) {
         console.error("[chat] stream read error:", err);
       }
 
-      // Persist reply. Check conv still exists first (it can be deleted
-      // mid-stream by the client) — if gone, recreate it so the FK holds.
-      try {
-        console.log("[chat] stream done, convId=", convId, "answerLen=", fullAnswer.length);
-        const stillThere = await prisma.conversation.findUnique({
-          where: { id: convId }, select: { id: true }
-        });
-        if (!stillThere) {
-          console.log("[chat] conv vanished, recreating");
-          const recreated = await prisma.conversation.create({
-            data: { userId, title: lastUserMsg.slice(0, 60) || "New chat" }
-          });
-          convId = recreated.id;
-          // Save the user message too since the original was orphaned by cascade.
-          await prisma.message.create({
-            data: { conversationId: convId, role: "user", content: lastUserMsg }
-          });
-        }
-        await prisma.message.create({
-          data: { conversationId: convId, role: "assistant", content: fullAnswer || "(no response)" }
-        });
-        await prisma.conversation.update({
-          where: { id: convId }, data: { updatedAt: new Date() }
-        });
-        if (!conversationId) {
-          await prisma.conversation.update({
-            where: { id: convId },
-            data: { title: lastUserMsg.slice(0, 60) || "New chat" }
-          });
-        }
-        await Promise.all([
-          recordQuestion(userId, lastUserMsg, fullAnswer),
-          appendToMemory(userId, lastUserMsg)
-        ]);
-      } catch (err) {
-        console.error("[chat] post-stream DB error:", err);
-      }
-
-      // Always send sentinel — even if DB ops failed — so the client unlocks.
-      const newUsage = await getUsage(userId).catch(() => usage);
-      const meta = JSON.stringify({ usage: newUsage, conversationId: convId });
+      // Send the sentinel immediately with an optimistic usage count so the
+      // client unlocks and shows the updated quota without waiting for DB writes.
+      const optimisticUsage = {
+        ...usage,
+        used: usage.used + 1,
+        remaining: Math.max(0, usage.remaining - 1)
+      };
+      const meta = JSON.stringify({ usage: optimisticUsage, conversationId: convId });
       try { controller.enqueue(encoder.encode(`\n<<<DONE>>>${meta}`)); } catch {}
       try { controller.close(); } catch {}
+
+      // DB writes happen after the stream is closed — client is already unlocked.
+      (async () => {
+        try {
+          const stillThere = await prisma.conversation.findUnique({
+            where: { id: convId }, select: { id: true }
+          });
+          if (!stillThere) {
+            const recreated = await prisma.conversation.create({
+              data: { userId, title: lastUserMsg.slice(0, 60) || "New chat" }
+            });
+            convId = recreated.id;
+            await prisma.message.create({
+              data: { conversationId: convId, role: "user", content: lastUserMsg }
+            });
+          }
+          await prisma.message.create({
+            data: { conversationId: convId, role: "assistant", content: fullAnswer || "(no response)" }
+          });
+          await prisma.conversation.update({
+            where: { id: convId }, data: { updatedAt: new Date() }
+          });
+          if (!conversationId) {
+            await prisma.conversation.update({
+              where: { id: convId }, data: { title: lastUserMsg.slice(0, 60) || "New chat" }
+            });
+          }
+          await recordQuestion(userId, lastUserMsg, fullAnswer);
+          await appendToMemory(userId, lastUserMsg);
+        } catch (err) {
+          console.error("[chat] post-stream DB error:", err);
+        }
+      })();
     },
     async cancel() {
       // Client disconnected mid-stream — still try to save what arrived.
