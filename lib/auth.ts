@@ -1,7 +1,6 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { NextAuthOptions } from "next-auth";
 import type { SendVerificationRequestParams } from "next-auth/providers/email";
-import GoogleProvider from "next-auth/providers/google";
 import EmailProvider from "next-auth/providers/email";
 import { prisma } from "./db";
 
@@ -42,10 +41,6 @@ async function sendVerificationRequest({ identifier, url }: SendVerificationRequ
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!
-    }),
     // Magic-link email login — powered by Resend.
     EmailProvider({
       from: process.env.EMAIL_FROM ?? "noreply@example.com",

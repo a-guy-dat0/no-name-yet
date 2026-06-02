@@ -1,6 +1,6 @@
 "use client";
 
-// Sign-in page — liquid glass card, Google + email magic link.
+// Sign-in page — email magic link only.
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 
@@ -31,13 +31,10 @@ export default function SignInPage() {
   return (
     <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center px-4">
       <div className="w-full max-w-sm">
-
-        {/* Glass card */}
         <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40">
 
           {/* Header */}
           <div className="mb-8 text-center">
-            {/* Rounded-square logo */}
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.1] bg-gradient-to-br from-indigo-500/30 to-purple-600/20 backdrop-blur-sm shadow-[0_0_30px_rgba(99,102,241,0.25)]">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
                    className="h-6 w-6 text-indigo-300" aria-hidden="true">
@@ -46,28 +43,7 @@ export default function SignInPage() {
               </svg>
             </div>
             <h1 className="text-xl font-semibold text-white">{"{ask-it}"}</h1>
-            <p className="mt-1 text-sm text-gray-500">Sign in to start chatting</p>
-          </div>
-
-          {/* Google */}
-          <button
-            onClick={() => signIn("google", { callbackUrl: "/chat" })}
-            className="glass glass-hover flex w-full items-center justify-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-white"
-          >
-            <svg viewBox="0 0 48 48" className="h-4 w-4 shrink-0" aria-hidden="true">
-              <path fill="#EA4335" d="M24 9.5c3.1 0 5.7 1.1 7.8 2.9l5.8-5.8C33.9 3.5 29.3 1.5 24 1.5 14.9 1.5 7.2 7 3.7 14.8l6.8 5.3C12.2 13.6 17.6 9.5 24 9.5z"/>
-              <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17z"/>
-              <path fill="#FBBC05" d="M10.5 28.1A14.7 14.7 0 019.5 24c0-1.4.2-2.8.5-4.1l-6.8-5.3A23.5 23.5 0 00.5 24c0 3.8.9 7.4 2.5 10.5l7.5-6.4z"/>
-              <path fill="#34A853" d="M24 46.5c5.3 0 9.8-1.8 13-4.8l-7.5-5.8c-1.8 1.2-4.1 1.9-5.5 1.9-6.4 0-11.8-4.3-13.5-10.1l-7.5 6.4C7.2 41 15 46.5 24 46.5z"/>
-            </svg>
-            Continue with Google
-          </button>
-
-          {/* Divider */}
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-white/[0.07]" />
-            <span className="text-xs text-gray-600">or</span>
-            <div className="h-px flex-1 bg-white/[0.07]" />
+            <p className="mt-1 text-sm text-gray-500">Enter your email to get a sign-in link</p>
           </div>
 
           {/* Email magic link */}
@@ -82,8 +58,7 @@ export default function SignInPage() {
               </div>
               <p className="font-medium text-white">Check your inbox</p>
               <p className="mt-1 text-sm text-gray-400">
-                We sent a sign-in link to{" "}
-                <span className="text-gray-200">{email}</span>
+                We sent a sign-in link to <span className="text-gray-200">{email}</span>
               </p>
               <p className="mt-1 text-xs text-gray-600">Link expires in 24 hours</p>
             </div>
@@ -98,9 +73,7 @@ export default function SignInPage() {
                 className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-gray-600 outline-none backdrop-blur-sm transition-all focus:border-indigo-500/50 focus:bg-white/[0.06] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.15)]"
               />
               {error && (
-                <p className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-400">
-                  {error}
-                </p>
+                <p className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-400">{error}</p>
               )}
               <button
                 type="submit"
