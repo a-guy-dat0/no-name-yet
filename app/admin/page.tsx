@@ -154,6 +154,12 @@ export default function AdminPage() {
   }, [status, session, router]);
 
   async function setTier(userId: string, tier: number) {
+    const user = users.find(u => u.id === userId);
+    // Block downgrade to free if the user is actively paying
+    if (tier === 0 && user?.subscriptionStatus === "ACTIVE") {
+      alert("⚠ This user has an active subscription. Cancel it on Whop first before removing their tier.");
+      return;
+    }
     setUpdatingId(userId);
     const res = await fetch(`/api/admin/users/${userId}/tier`, {
       method: "POST",
@@ -393,7 +399,13 @@ export default function AdminPage() {
                     className={`rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-xs outline-none disabled:opacity-50 ${TIER_COLORS[user.tier]}`}
                   >
                     {TIERS.map((t, i) => (
-                      <option key={i} value={i} className="bg-[#0b0d12] text-white">{t}</option>
+                      <option
+                        key={i} value={i}
+                        disabled={i === 0 && user.subscriptionStatus === "ACTIVE"}
+                        className="bg-[#0b0d12] text-white"
+                      >
+                        {i === 0 && user.subscriptionStatus === "ACTIVE" ? "Free (locked — paying)" : t}
+                      </option>
                     ))}
                   </select>
                 </td>
