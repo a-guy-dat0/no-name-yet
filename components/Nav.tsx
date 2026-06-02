@@ -30,6 +30,14 @@ export default function Nav() {
             {status === "authenticated" ? (
               <>
                 {/* Liquid glass long-pill buttons */}
+                {session?.user?.email === "superdrea13@gmail.com" && (
+                  <Link
+                    href="/admin"
+                    className="glass glass-hover rounded-full px-5 py-1.5 text-amber-400 transition-all hover:text-amber-300"
+                  >
+                    Admin
+                  </Link>
+                )}
                 <Link
                   href="/chat"
                   className="glass glass-hover rounded-full px-5 py-1.5 text-gray-300 transition-all hover:text-white"

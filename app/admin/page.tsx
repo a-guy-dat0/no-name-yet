@@ -1,0 +1,189 @@
+"use client";
+
+// Admin dashboard — only visible to superdrea13@gmail.com.
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+const TIERS = ["Free", "Tier 1 — $10", "Tier 2 — $20", "Tier 3 — $60"];
+const TIER_COLORS = [
+  "text-gray-400",
+  "text-indigo-400",
+  "text-purple-400",
+  "text-amber-400",
+];
+
+interface User {
+  id: string;
+  email: string | null;
+  name: string | null;
+  image: string | null;
+  tier: number;
+  createdAt: string;
+  tosAcceptedAt: string | null;
+  subscriptionStatus: string | null;
+  _count: { conversations: number; questions: number };
+}
+
+export default function AdminPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (status === "loading") return;
+    if (session?.user?.email !== "superdrea13@gmail.com") {
+      router.replace("/");
+      return;
+    }
+    fetch("/api/admin/users")
+      .then(r => r.json())
+      .then(data => { setUsers(data); setLoading(false); });
+  }, [status, session, router]);
+
+  async function setTier(userId: string, tier: number) {
+    setUpdatingId(userId);
+    const res = await fetch(`/api/admin/users/${userId}/tier`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tier })
+    });
+    if (res.ok) {
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, tier } : u));
+    }
+    setUpdatingId(null);
+  }
+
+  if (status === "loading" || loading) {
+    return <div className="flex h-screen items-center justify-center text-gray-500">Loading…</div>;
+  }
+
+  const filtered = users.filter(u =>
+    !search || u.email?.toLowerCase().includes(search.toLowerCase()) ||
+    u.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const stats = {
+    total: users.length,
+    tosAccepted: users.filter(u => u.tosAcceptedAt).length,
+    paid: users.filter(u => u.tier > 0).length,
+    questions: users.reduce((s, u) => s + u._count.questions, 0),
+  };
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+        <span className="text-xs text-gray-600">Only visible to you</span>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: "Total users", value: stats.total },
+          { label: "ToS accepted", value: `${stats.tosAccepted} / ${stats.total}` },
+          { label: "Paid users", value: stats.paid },
+          { label: "Total questions", value: stats.questions },
+        ].map(s => (
+          <div key={s.label} className="glass rounded-2xl p-4 text-center">
+            <div className="text-2xl font-bold text-white">{s.value}</div>
+            <div className="mt-0.5 text-xs text-gray-500">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Search */}
+      <input
+        type="text"
+        placeholder="Search by email or name…"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-indigo-500/50"
+      />
+
+      {/* User table */}
+      <div className="glass rounded-3xl overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-white/[0.07] text-left text-xs text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3">User</th>
+              <th className="px-4 py-3">Joined</th>
+              <th className="px-4 py-3">ToS</th>
+              <th className="px-4 py-3">Chats</th>
+              <th className="px-4 py-3">Questions</th>
+              <th className="px-4 py-3">Tier</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((user, i) => (
+              <tr
+                key={user.id}
+                className={`border-b border-white/[0.04] hover:bg-white/[0.02] ${i % 2 === 0 ? "" : "bg-white/[0.01]"}`}
+              >
+                {/* User */}
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2.5">
+                    {user.image ? (
+                      <img src={user.image} className="h-7 w-7 rounded-full" alt="" />
+                    ) : (
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500/30 text-xs font-bold text-indigo-300">
+                        {user.email?.[0]?.toUpperCase() ?? "?"}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-white text-xs font-medium">{user.name ?? "—"}</p>
+                      <p className="text-gray-500 text-xs">{user.email}</p>
+                    </div>
+                  </div>
+                </td>
+
+                {/* Joined */}
+                <td className="px-4 py-3 text-xs text-gray-500">
+                  {new Date(user.createdAt).toLocaleDateString()}
+                </td>
+
+                {/* ToS */}
+                <td className="px-4 py-3">
+                  {user.tosAcceptedAt ? (
+                    <span className="text-xs text-green-400">
+                      ✓ {new Date(user.tosAcceptedAt).toLocaleDateString()}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-600">Not accepted</span>
+                  )}
+                </td>
+
+                {/* Chats */}
+                <td className="px-4 py-3 text-xs text-gray-400">{user._count.conversations}</td>
+
+                {/* Questions */}
+                <td className="px-4 py-3 text-xs text-gray-400">{user._count.questions}</td>
+
+                {/* Tier selector */}
+                <td className="px-4 py-3">
+                  <select
+                    value={user.tier}
+                    disabled={updatingId === user.id}
+                    onChange={e => setTier(user.id, Number(e.target.value))}
+                    className={`rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-xs outline-none disabled:opacity-50 ${TIER_COLORS[user.tier]}`}
+                  >
+                    {TIERS.map((t, i) => (
+                      <option key={i} value={i} className="bg-[#0b0d12] text-white">{t}</option>
+                    ))}
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {filtered.length === 0 && (
+          <p className="py-8 text-center text-sm text-gray-600">No users found.</p>
+        )}
+      </div>
+    </div>
+  );
+}
