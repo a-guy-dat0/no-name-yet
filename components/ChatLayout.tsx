@@ -346,7 +346,8 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
               />
             </div>
             <p className="mt-1.5 text-xs text-gray-600">
-              {usage.remaining} of {usage.limit} left this {usage.period}
+              {usage.remaining} of {usage.limit} left · renews{" "}
+              {new Date(usage.resetsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
             </p>
           </div>
 
