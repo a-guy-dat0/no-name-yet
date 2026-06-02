@@ -8,7 +8,7 @@ import { useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { TIERS, TierId, GUMROAD_URLS } from "@/lib/tiers";
+import { TIERS, TierId, WHOP_URLS } from "@/lib/tiers";
 
 function CheckoutRedirect() {
   const { data: session, status } = useSession();
@@ -17,24 +17,21 @@ function CheckoutRedirect() {
   const tierParam = Number(searchParams.get("tier") ?? "1");
   const tier = ([1, 2, 3].includes(tierParam) ? tierParam : 1) as TierId;
   const plan = TIERS[tier];
-  const gumroadUrl = GUMROAD_URLS[tier];
+  const whopUrl = WHOP_URLS[tier];
 
   useEffect(() => {
     if (status === "loading") return;
     if (!session) { router.push("/signin"); return; }
-    if (!gumroadUrl) return;
+    if (!whopUrl) return;
 
-    // Build the Gumroad URL with the user's email pre-filled so they don't
-    // have to type it again on the Gumroad checkout page.
-    const url = new URL(gumroadUrl);
+    // Pass the user's email as a URL param so Whop can pre-fill the checkout.
+    const url = new URL(whopUrl);
     if (session.user.email) url.searchParams.set("email", session.user.email);
-    // Pass their user ID so the webhook can match the purchase to their account.
-    url.searchParams.set("wanted", "true");
 
     window.location.href = url.toString();
-  }, [status, session, gumroadUrl, router]);
+  }, [status, session, whopUrl, router]);
 
-  if (status === "loading" || (status === "authenticated" && gumroadUrl)) {
+  if (status === "loading" || (status === "authenticated" && whopUrl)) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <div className="glass rounded-3xl p-10 text-center max-w-sm w-full">

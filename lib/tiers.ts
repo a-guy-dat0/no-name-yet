@@ -67,17 +67,17 @@ export const TIERS: Record<TierId, Tier> = {
   }
 };
 
-// Gumroad product URLs — used by the checkout page to redirect to the right product.
-export const GUMROAD_URLS: Record<TierId, string | undefined> = {
+// Whop checkout URLs — used by the checkout page to redirect to the right plan.
+export const WHOP_URLS: Record<TierId, string | undefined> = {
   0: undefined,
-  1: process.env.GUMROAD_PRODUCT_TIER1 ?? "https://superdrea.gumroad.com/l/qvmshq",
-  2: process.env.GUMROAD_PRODUCT_TIER2 ?? "https://superdrea.gumroad.com/l/wqwptw",
-  3: process.env.GUMROAD_PRODUCT_TIER3 ?? "https://superdrea.gumroad.com/l/gxbbee",
+  1: "https://whop.com/checkout/plan_0vHjcPuSzIzaA",
+  2: "https://whop.com/checkout/plan_tZ3eUDxENOugw",
+  3: "https://whop.com/checkout/plan_JuTFnlenCBaja",
 };
 
-export function tierFromGumroadProductId(productId: string): TierId | null {
-  if (productId === "qvmshq") return 1;
-  if (productId === "wqwptw") return 2;
-  if (productId === "gxbbee") return 3;
+export function tierFromWhopPlanId(planId: string): TierId | null {
+  if (planId === "plan_0vHjcPuSzIzaA") return 1;
+  if (planId === "plan_tZ3eUDxENOugw") return 2;
+  if (planId === "plan_JuTFnlenCBaja") return 3;
   return null;
 }
