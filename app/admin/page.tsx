@@ -5,8 +5,17 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const TIERS = ["Free", "Tier 1 — $10", "Tier 2 — $20", "Tier 3 — $60"];
+const TIERS = ["Free", "Tier 1 — $10", "Tier 2 — $20", "Tier 3 — $50"];
 const TIER_COLORS = ["text-gray-400", "text-indigo-400", "text-purple-400", "text-amber-400"];
+
+interface Purchase {
+  id: string;
+  email: string;
+  tier: number;
+  amountUsd: number;
+  status: string;
+  createdAt: string;
+}
 
 interface User {
   id: string;
@@ -121,13 +130,22 @@ export default function AdminPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [tab, setTab] = useState<"users" | "payments">("users");
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
   useEffect(() => {
     if (status === "loading") return;
     if (session?.user?.email !== "superdrea13@gmail.com") { router.replace("/"); return; }
-    fetch("/api/admin/users")
-      .then(r => r.json())
-      .then(data => { setUsers(data); setLoading(false); });
+    Promise.all([
+      fetch("/api/admin/users").then(r => r.json()),
+      fetch("/api/admin/purchases").then(r => r.json())
+    ]).then(([users, pData]) => {
+      setUsers(users);
+      setPurchases(pData.purchases ?? []);
+      setTotalRevenue(pData.total ?? 0);
+      setLoading(false);
+    });
   }, [status, session, router]);
 
   async function setTier(userId: string, tier: number) {
@@ -167,6 +185,76 @@ export default function AdminPage() {
         <span className="text-xs text-gray-600">Only visible to you</span>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2">
+        {(["users", "payments"] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`rounded-xl px-4 py-2 text-sm font-medium capitalize transition-all ${
+              tab === t ? "btn-brand text-white" : "glass glass-hover text-gray-400"
+            }`}>
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {tab === "payments" && (
+        <>
+          {/* Revenue stats */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {[
+              { label: "Total active MRR", value: `$${totalRevenue}/mo` },
+              { label: "Total payments", value: purchases.length },
+              { label: "Active subs", value: purchases.filter(p => p.status === "active").length },
+            ].map(s => (
+              <div key={s.label} className="glass rounded-2xl p-4 text-center">
+                <div className="text-2xl font-bold text-white">{s.value}</div>
+                <div className="mt-0.5 text-xs text-gray-500">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Payments table */}
+          <div className="glass rounded-3xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/[0.07] text-left text-xs text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Tier</th>
+                  <th className="px-4 py-3">Amount</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {purchases.map((p, i) => (
+                  <tr key={p.id} className={`border-b border-white/[0.04] ${i % 2 === 0 ? "" : "bg-white/[0.01]"}`}>
+                    <td className="px-4 py-3 text-xs text-gray-300">{p.email}</td>
+                    <td className={`px-4 py-3 text-xs ${TIER_COLORS[p.tier]}`}>{TIERS[p.tier]}</td>
+                    <td className="px-4 py-3 text-xs text-green-400">${p.amountUsd}/mo</td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        p.status === "active"
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-gray-500/20 text-gray-500"
+                      }`}>
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-500">
+                      {new Date(p.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {purchases.length === 0 && (
+              <p className="py-8 text-center text-sm text-gray-600">No payments yet.</p>
+            )}
+          </div>
+        </>
+      )}
+
+      {tab === "users" && <>
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
@@ -255,6 +343,7 @@ export default function AdminPage() {
         </table>
         {filtered.length === 0 && <p className="py-8 text-center text-sm text-gray-600">No users found.</p>}
       </div>
+    </>}
     </div>
   );
 }

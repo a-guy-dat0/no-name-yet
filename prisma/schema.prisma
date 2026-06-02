@@ -67,9 +67,25 @@ model User {
   sessions      Session[]
   questions     Question[]
   conversations Conversation[]
+  purchases     Purchase[]
 }
 
 // Quota tracking — one record per question asked (for rolling-window counting)
+model Purchase {
+  id          String   @id @default(cuid())
+  userId      String?
+  email       String
+  tier        Int
+  amountUsd   Float
+  planId      String
+  status      String   @default("active") // active, cancelled
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([createdAt])
+}
+
 model Question {
   id        String   @id @default(cuid())
   userId    String

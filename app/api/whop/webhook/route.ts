@@ -62,19 +62,39 @@ export async function POST(req: NextRequest) {
         console.warn(`[whop] unknown plan: ${planId}`);
         break;
       }
-      await prisma.user.updateMany({
-        where: { email },
-        data: { tier, subscriptionStatus: "ACTIVE" }
-      });
+      const tierPrices: Record<number, number> = { 1: 10, 2: 20, 3: 50 };
+      const user = await prisma.user.findFirst({ where: { email }, select: { id: true } });
+      await Promise.all([
+        prisma.user.updateMany({
+          where: { email },
+          data: { tier, subscriptionStatus: "ACTIVE" }
+        }),
+        prisma.purchase.create({
+          data: {
+            userId: user?.id ?? null,
+            email,
+            tier,
+            amountUsd: tierPrices[tier] ?? 0,
+            planId,
+            status: "active"
+          }
+        })
+      ]);
       console.log(`[whop] upgraded ${email} to tier ${tier}`);
       break;
     }
 
     case "membership_deactivated": {
-      await prisma.user.updateMany({
-        where: { email },
-        data: { tier: 0, subscriptionStatus: "CANCELLED" }
-      });
+      await Promise.all([
+        prisma.user.updateMany({
+          where: { email },
+          data: { tier: 0, subscriptionStatus: "CANCELLED" }
+        }),
+        prisma.purchase.updateMany({
+          where: { email, status: "active" },
+          data: { status: "cancelled" }
+        })
+      ]);
       console.log(`[whop] downgraded ${email} to free`);
       break;
     }
