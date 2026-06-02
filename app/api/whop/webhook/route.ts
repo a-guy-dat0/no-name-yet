@@ -3,8 +3,8 @@
 //   URL: https://ask-it.ink/api/whop/webhook
 //
 // Events:
-//   membership.went_valid   → subscription active  → upgrade tier
-//   membership.went_invalid → cancelled/expired    → downgrade to free
+//   membership_activated   → subscription active  → upgrade tier
+//   membership_deactivated → cancelled/expired    → downgrade to free
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   if (!email) return NextResponse.json({ ok: true, skipped: "no email" });
 
   switch (action) {
-    case "membership.went_valid": {
+    case "membership_activated": {
       const tier = tierFromWhopPlanId(planId);
       if (tier === null) {
         console.warn(`[whop] unknown plan: ${planId}`);
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       break;
     }
 
-    case "membership.went_invalid": {
+    case "membership_deactivated": {
       await prisma.user.updateMany({
         where: { email },
         data: { tier: 0, subscriptionStatus: "CANCELLED" }
