@@ -15,6 +15,7 @@ interface Purchase {
   amountUsd: number;
   status: string;
   createdAt: string;
+  matched: boolean;
 }
 
 interface User {
@@ -133,6 +134,10 @@ export default function AdminPage() {
   const [tab, setTab] = useState<"users" | "payments">("users");
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
+  const [assigning, setAssigning] = useState<Purchase | null>(null);
+  const [assignEmail, setAssignEmail] = useState("");
+  const [assignBusy, setAssignBusy] = useState(false);
+  const [assignMsg, setAssignMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -159,6 +164,27 @@ export default function AdminPage() {
     setUpdatingId(null);
   }
 
+  async function handleAssign() {
+    if (!assigning || !assignEmail.trim()) return;
+    setAssignBusy(true);
+    setAssignMsg(null);
+    const res = await fetch("/api/admin/purchases", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ purchaseId: assigning.id, targetEmail: assignEmail.trim() })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setAssignMsg("✓ Tier applied successfully");
+      setPurchases(prev => prev.map(p =>
+        p.id === assigning.id ? { ...p, email: assignEmail.trim(), matched: true } : p
+      ));
+    } else {
+      setAssignMsg("✗ " + (data.error ?? "Failed"));
+    }
+    setAssignBusy(false);
+  }
+
   if (status === "loading" || loading)
     return <div className="flex h-screen items-center justify-center text-gray-500">Loading…</div>;
 
@@ -178,6 +204,42 @@ export default function AdminPage() {
     <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
       {selectedUser && (
         <UserMessagesPanel user={selectedUser} onClose={() => setSelectedUser(null)} />
+      )}
+
+      {/* Assign purchase modal */}
+      {assigning && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}>
+          <div className="glass w-full max-w-md rounded-3xl p-6 space-y-4">
+            <h3 className="font-semibold text-white">Assign purchase to a user</h3>
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3 text-xs text-amber-300">
+              <p className="font-medium">Paid email: {assigning.email}</p>
+              <p className="mt-0.5 text-amber-500">Tier {assigning.tier} — ${assigning.amountUsd}/mo</p>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs text-gray-500">Site account email to upgrade</label>
+              <input
+                type="email"
+                placeholder="user@example.com"
+                value={assignEmail}
+                onChange={e => { setAssignEmail(e.target.value); setAssignMsg(null); }}
+                className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-indigo-500/50"
+              />
+            </div>
+            {assignMsg && (
+              <p className={`text-xs ${assignMsg.startsWith("✓") ? "text-green-400" : "text-red-400"}`}>{assignMsg}</p>
+            )}
+            <div className="flex gap-3">
+              <button onClick={handleAssign} disabled={assignBusy}
+                className="btn-brand flex-1 rounded-2xl py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+                {assignBusy ? "Applying…" : "Apply tier"}
+              </button>
+              <button onClick={() => { setAssigning(null); setAssignEmail(""); setAssignMsg(null); }}
+                className="glass glass-hover flex-1 rounded-2xl py-2.5 text-sm text-gray-400">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="flex items-center justify-between">
@@ -223,25 +285,31 @@ export default function AdminPage() {
                   <th className="px-4 py-3">Amount</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody>
                 {purchases.map((p, i) => (
-                  <tr key={p.id} className={`border-b border-white/[0.04] ${i % 2 === 0 ? "" : "bg-white/[0.01]"}`}>
-                    <td className="px-4 py-3 text-xs text-gray-300">{p.email}</td>
+                  <tr key={p.id} className={`border-b border-white/[0.04] ${!p.matched ? "bg-amber-500/[0.03]" : i % 2 === 0 ? "" : "bg-white/[0.01]"}`}>
+                    <td className="px-4 py-3 text-xs">
+                      <span className={p.matched ? "text-gray-300" : "text-amber-300"}>{p.email}</span>
+                      {!p.matched && <span className="ml-1.5 text-[10px] text-amber-500">⚠ no account</span>}
+                    </td>
                     <td className={`px-4 py-3 text-xs ${TIER_COLORS[p.tier]}`}>{TIERS[p.tier]}</td>
                     <td className="px-4 py-3 text-xs text-green-400">${p.amountUsd}/mo</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        p.status === "active"
-                          ? "bg-green-500/20 text-green-400"
-                          : "bg-gray-500/20 text-gray-500"
-                      }`}>
-                        {p.status}
-                      </span>
+                        p.status === "active" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-500"
+                      }`}>{p.status}</span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
-                      {new Date(p.createdAt).toLocaleDateString()}
+                    <td className="px-4 py-3 text-xs text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3">
+                      {!p.matched && (
+                        <button onClick={() => { setAssigning(p); setAssignEmail(""); setAssignMsg(null); }}
+                          className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[10px] text-amber-300 hover:bg-amber-500/20">
+                          Assign
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
