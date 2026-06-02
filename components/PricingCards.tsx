@@ -128,7 +128,7 @@ export default function PricingCards() {
                   Use free tier
                 </Link>
               ) : (
-                <Link href={`/pricing?tier=${id}`}
+                <Link href={`/checkout?tier=${id}`}
                       className="block rounded-2xl btn-brand px-4 py-2.5 text-center text-sm font-semibold text-white">
                   Subscribe
                 </Link>
