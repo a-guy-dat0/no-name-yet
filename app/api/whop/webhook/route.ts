@@ -30,33 +30,23 @@ export async function POST(req: NextRequest) {
   }
 
   const body = JSON.parse(rawBody);
-  const action: string = body.action ?? "";
   const data = body.data ?? {};
 
-  // Log full payload on first few webhooks so we can verify field names
   console.log("[whop] payload:", JSON.stringify(body, null, 2));
 
-  // Whop may nest the plan ID in different places — try all known locations
-  const email: string =
-    data.user?.email ??
-    data.email ??
-    body.email ??
-    "";
+  const email: string = data.user?.email ?? data.email ?? body.email ?? "";
+  const planId: string = data.plan_id ?? data.plan?.id ?? data.product?.plan_id ?? body.plan_id ?? "";
+  // Whop sends status in data.status — use that to determine what happened
+  const status: string = data.status ?? "";
 
-  const planId: string =
-    data.plan_id ??
-    data.plan?.id ??
-    data.product?.plan_id ??
-    data.membership?.plan_id ??
-    body.plan_id ??
-    "";
-
-  console.log(`[whop] action=${action} email=${email} plan=${planId}`);
+  console.log(`[whop] status=${status} email=${email} plan=${planId}`);
 
   if (!email) return NextResponse.json({ ok: true, skipped: "no email" });
 
-  switch (action) {
-    case "membership_activated": {
+  // "active" → subscription started or renewed → upgrade
+  // anything else (expired, cancelled, etc.) → downgrade
+  switch (status) {
+    case "active": {
       const tier = tierFromWhopPlanId(planId);
       if (tier === null) {
         console.warn(`[whop] unknown plan: ${planId}`);
@@ -84,7 +74,10 @@ export async function POST(req: NextRequest) {
       break;
     }
 
-    case "membership_deactivated": {
+    case "expired":
+    case "canceled":
+    case "cancelled":
+    case "inactive": {
       await Promise.all([
         prisma.user.updateMany({
           where: { email },
@@ -100,7 +93,7 @@ export async function POST(req: NextRequest) {
     }
 
     default:
-      console.log(`[whop] unhandled action: ${action}`);
+      console.log(`[whop] unhandled status: ${status}`);
   }
 
   return NextResponse.json({ ok: true });
