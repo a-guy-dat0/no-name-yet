@@ -20,7 +20,9 @@ export async function POST(
 
   const user = await prisma.user.update({
     where: { id: params.id },
-    data: { tier, subscriptionStatus: tier > 0 ? "ACTIVE" : null },
+    // Use "MANUAL" so the admin lock (which only blocks "ACTIVE" = paying users)
+    // doesn't prevent removing a manually gifted tier.
+    data: { tier, subscriptionStatus: tier > 0 ? "MANUAL" : null },
     select: { email: true, tier: true }
   });
 
