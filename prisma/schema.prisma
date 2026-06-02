@@ -59,6 +59,7 @@ model User {
   paypalSubscriptionId String?   @unique
   subscriptionStatus   String?
   subscriptionRenewsAt DateTime?
+  subscriptionEndsAt   DateTime? // set when cancelled — access until this date
 
   // Terms of service acceptance — null = not yet accepted
   tosAcceptedAt        DateTime?

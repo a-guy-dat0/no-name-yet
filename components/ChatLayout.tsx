@@ -349,6 +349,17 @@ export default function ChatLayout({ initialUsage }: { initialUsage: Usage }) {
               {usage.remaining} of {usage.limit} left · renews{" "}
               {new Date(usage.resetsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
             </p>
+            {/* Show expiry notice if they cancelled but still have time */}
+            {session?.user?.subscriptionStatus === "CANCELLED" &&
+             (session.user as any).subscriptionEndsAt &&
+             new Date((session.user as any).subscriptionEndsAt) > new Date() && (
+              <p className="mt-1.5 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-2 py-1 text-xs text-amber-400">
+                ⚠ Access until{" "}
+                {new Date((session.user as any).subscriptionEndsAt).toLocaleDateString(undefined, {
+                  month: "short", day: "numeric", year: "numeric"
+                })}
+              </p>
+            )}
           </div>
 
           {/* User avatar + email — mixed into sidebar */}

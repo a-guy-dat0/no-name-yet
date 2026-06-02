@@ -36,8 +36,10 @@ export async function POST(req: NextRequest) {
 
   const email: string = data.user?.email ?? data.email ?? body.email ?? "";
   const planId: string = data.plan_id ?? data.plan?.id ?? data.product?.plan_id ?? body.plan_id ?? "";
-  // Whop sends status in data.status — use that to determine what happened
   const status: string = data.status ?? "";
+  // When subscription ends — always present from Whop
+  const periodEnd: Date | null = data.renewal_period_end
+    ? new Date(data.renewal_period_end) : null;
 
   console.log(`[whop] status=${status} email=${email} plan=${planId}`);
 
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
       await Promise.all([
         prisma.user.updateMany({
           where: { email },
-          data: { tier, subscriptionStatus: "ACTIVE" }
+          data: { tier, subscriptionStatus: "ACTIVE", subscriptionEndsAt: periodEnd }
         }),
         prisma.purchase.create({
           data: {
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
       await Promise.all([
         prisma.user.updateMany({
           where: { email },
-          data: { tier: 0, subscriptionStatus: "CANCELLED" }
+          data: { tier: 0, subscriptionStatus: "CANCELLED", subscriptionEndsAt: periodEnd }
         }),
         prisma.purchase.updateMany({
           where: { email, status: "active" },

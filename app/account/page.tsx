@@ -131,6 +131,18 @@ export default function AccountPage() {
             <p className="text-xs text-gray-600">
               {usage.remaining} remaining · resets {new Date(usage.resetsAt).toLocaleDateString()}
             </p>
+            {user?.subscriptionStatus === "CANCELLED" &&
+             (user as any).subscriptionEndsAt &&
+             new Date((user as any).subscriptionEndsAt) > new Date() && (
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3 text-sm text-amber-400">
+                ⚠ Your subscription was cancelled. You keep access until{" "}
+                <span className="font-semibold text-amber-300">
+                  {new Date((user as any).subscriptionEndsAt).toLocaleDateString(undefined, {
+                    weekday: "long", month: "long", day: "numeric", year: "numeric"
+                  })}
+                </span>. After that you'll be moved to the free tier.
+              </div>
+            )}
           </>
         )}
       </Section>

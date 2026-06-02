@@ -54,11 +54,12 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = user.id;
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
-          select: { tier: true, subscriptionStatus: true, tosAcceptedAt: true }
+          select: { tier: true, subscriptionStatus: true, tosAcceptedAt: true, subscriptionEndsAt: true }
         });
         (session.user as any).tier = dbUser?.tier ?? 0;
         (session.user as any).subscriptionStatus = dbUser?.subscriptionStatus ?? null;
         (session.user as any).tosAcceptedAt = dbUser?.tosAcceptedAt?.toISOString() ?? null;
+        (session.user as any).subscriptionEndsAt = dbUser?.subscriptionEndsAt?.toISOString() ?? null;
       }
       return session;
     }
