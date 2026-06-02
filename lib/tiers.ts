@@ -2,7 +2,7 @@
 // Tier 0: free        — 5 questions / MONTH
 // Tier 1: $10 / month — 25 questions / WEEK
 // Tier 2: $20 / month — 55 questions / WEEK
-// Tier 3: $60 / month — 200 questions / WEEK
+// Tier 3: $50 / month — 200 questions / WEEK
 
 export type TierId = 0 | 1 | 2 | 3;
 export type Period = "week" | "month";
@@ -56,7 +56,7 @@ export const TIERS: Record<TierId, Tier> = {
   3: {
     id: 3,
     name: "Tier 3",
-    priceUsd: 60,
+    priceUsd: 50,
     limit: 200,
     period: "week",
     highlights: [
