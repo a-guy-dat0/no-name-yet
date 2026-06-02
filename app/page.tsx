@@ -23,8 +23,8 @@ export default function LandingPage() {
           </span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-400">
-          {"{ask-it}"} runs a powerful uncensored model on dedicated hardware.
-          No filters, no judgment — just honest answers. Sign in and start in seconds.
+          {"{ask-it}"} is a powerful AI assistant that gives you thoughtful,
+          detailed answers on any topic. Sign in and start chatting in seconds.
         </p>
 
         <div className="mt-9 flex flex-wrap justify-center gap-3">

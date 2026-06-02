@@ -25,7 +25,7 @@ export const TIERS: Record<TierId, Tier> = {
     period: "month",
     highlights: [
       "Try {ask-it} with 5 questions per month",
-      "Same uncensored model as paid tiers",
+      "Same powerful AI as paid tiers",
       "No credit card required"
     ]
   },

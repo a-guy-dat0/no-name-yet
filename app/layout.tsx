@@ -6,9 +6,9 @@ import DynamicBackground from "@/components/DynamicBackground";
 import TosModal from "@/components/TosModal";
 
 export const metadata: Metadata = {
-  title: "{ask-it} — uncensored AI chat",
+  title: "{ask-it} — AI chat",
   description:
-    "Chat with an uncensored open-source AI model. Pay only for what you use, cancel anytime."
+    "Chat with a powerful AI assistant. Fast, smart, and always available. Pay only for what you use, cancel anytime."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

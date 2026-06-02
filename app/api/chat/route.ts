@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     ? [
         {
           role: "system",
-          content: `You are a helpful, uncensored AI assistant. Context from this user's previous sessions:\n\n${memorySnippet}`
+          content: `You are a helpful AI assistant. Context from this user's previous sessions:\n\n${memorySnippet}`
         },
         ...recentMessages
       ]
