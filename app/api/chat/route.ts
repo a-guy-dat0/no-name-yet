@@ -9,6 +9,8 @@ import { authOptions } from "@/lib/auth";
 import { streamChat, ChatMessage } from "@/lib/ollama";
 import { getUsage, recordQuestion } from "@/lib/usage";
 import { getUserMemory, appendToMemory } from "@/lib/memory";
+import { fetchPageText, extractUrls } from "@/lib/webfetch";
+import { webSearch } from "@/lib/websearch";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -47,15 +49,47 @@ export async function POST(req: NextRequest) {
   const memorySnippet = memory
     ? memory.split("\n").filter(Boolean).slice(-20).join("\n")
     : "";
-  const allMessages: ChatMessage[] = memorySnippet
-    ? [
-        {
-          role: "system",
-          content: `You are a helpful AI assistant. Context from this user's previous sessions:\n\n${memorySnippet}`
-        },
-        ...recentMessages
-      ]
-    : recentMessages;
+
+  // ── Internet access ─────────────────────────────────────────────
+  // If the user pasted URLs → read those pages.
+  // Otherwise → run a web search and inject the top results.
+  let webContext = "";
+  const urls = extractUrls(lastUserMsg);
+  if (urls.length > 0) {
+    const pages = await Promise.all(
+      urls.map(async (u) => ({ u, text: await fetchPageText(u) }))
+    );
+    const readable = pages.filter((p) => p.text);
+    if (readable.length) {
+      webContext = readable
+        .map((p) => `Content of ${p.u}:\n${p.text}`)
+        .join("\n\n");
+    }
+  } else if (lastUserMsg.trim().length > 11) {
+    // Skip search for tiny messages like "hi" / "thanks"
+    const results = await webSearch(lastUserMsg.slice(0, 200), 5).catch(() => []);
+    if (results.length) {
+      webContext =
+        "Live web search results for the user's question:\n" +
+        results
+          .map((r, i) => `${i + 1}. ${r.title} — ${r.url}\n   ${r.snippet}`)
+          .join("\n");
+    }
+  }
+
+  const systemParts = [
+    `You are a helpful AI assistant. Current date: ${new Date().toDateString()}.`
+  ];
+  if (memorySnippet) systemParts.push(`Context from this user's previous sessions:\n${memorySnippet}`);
+  if (webContext) systemParts.push(`${webContext}\n\nUse this live web information when relevant and mention the source URL if you rely on it.`);
+
+  // With web context in the prompt, trim history harder to stay inside the
+  // model's 4096-token context window.
+  const history = webContext ? recentMessages.slice(-8) : recentMessages;
+  const allMessages: ChatMessage[] = [
+    { role: "system", content: systemParts.join("\n\n") },
+    ...history
+  ];
 
   let ollamaStream: ReadableStream<Uint8Array>;
   try {
